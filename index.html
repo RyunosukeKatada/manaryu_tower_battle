@@ -1,41 +1,251 @@
-<canvas id="emojiCanvas"></canvas>
-<script>
-  const canvas = document.getElementById('emojiCanvas');
-  const ctx = canvas.getContext('2d');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-
-  let mouseX = canvas.width / 2;
-  let nextEmoji = getNextEmoji();
-
-  function getNextEmoji() {
-    const emojis = ['🦁','🐶','🐱','🐼','🐸','🐧','🦊','🐵','🐷','🦄','🐥','🐨'];
-    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-    return {
-      emoji,
-      width: 40,
-      height: 40
-    };
-  }
-
-  window.addEventListener('mousemove', (e) => {
-    mouseX = e.clientX;
-  });
-
-  window.addEventListener('touchmove', (e) => {
-    if (e.touches.length > 0) {
-      mouseX = e.touches[0].clientX;
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>タワーバトル</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #b3ecff;
+      overflow: hidden;
+      touch-action: none;
+      font-family: 'Segoe UI', sans-serif;
     }
-  });
+    canvas {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 0;
+    }
+    #liveScore {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 24px;
+      color: #333;
+      background: rgba(255,255,255,0.8);
+      padding: 10px 20px;
+      border-radius: 12px;
+      z-index: 10;
+    }
+    #uiContainer {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 10;
+    }
+    #gameover, #finalScore, #reset {
+      display: none;
+      margin: 12px auto;
+    }
+    #gameover {
+      font-size: 36px;
+      color: red;
+      font-weight: bold;
+    }
+    #finalScore {
+      font-size: 24px;
+      color: #333;
+    }
+    #reset {
+      font-size: 18px;
+      padding: 12px 24px;
+      background: #ffffffcc;
+      border: 2px solid #888;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #dropButton {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 22px;
+      padding: 14px 32px;
+      background: linear-gradient(to bottom, #ffd700, #ffa500);
+      border: 2px solid #aa7700;
+      border-radius: 12px;
+      cursor: pointer;
+      z-index: 11;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    #dropButton:hover {
+      background: linear-gradient(to bottom, #ffe066, #ff9900);
+    }
+  </style>
+</head>
+<body>
+  <div id="uiContainer">
+    <div id="gameover">GAME OVER</div>
+    <div id="finalScore"></div>
+    <button id="reset">リセット</button>
+  </div>
+  <button id="dropButton">ドロップ</button>
+  <div id="liveScore">スコア: 0個</div>
+  <canvas id="gameCanvas"></canvas>
 
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.font = `${nextEmoji.height}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(nextEmoji.emoji, mouseX, 40);
-    requestAnimationFrame(draw);
-  }
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <audio id="dropSound" src="https://soundeffect-lab.info/sound/button/mp3/decision29.mp3"></audio>
 
-  draw();
-</script>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const { Engine, Render, Runner, World, Bodies, Events } = Matter;
+
+    const engine = Engine.create();
+    const world = engine.world;
+    engine.gravity.y = 0.4;
+
+    const render = Render.create({
+      canvas: canvas,
+      engine: engine,
+      options: {
+        width: canvas.width,
+        height: canvas.height,
+        wireframes: false,
+        background: 'transparent'
+      }
+    });
+
+    Render.run(render);
+    Runner.run(Runner.create(), engine);
+
+    const platformWidth = canvas.width * 0.6;
+    const platformHeight = 40;
+    const platform = Bodies.rectangle(canvas.width / 2, canvas.height - 80, platformWidth, platformHeight, {
+      isStatic: true,
+      render: { fillStyle: "#888" }
+    });
+    World.add(world, platform);
+
+    const emojis = ['🦁','🐶','🐱','🐼','🐸','🐧','🦊','🐵','🐷','🦄','🐥','🐨'];
+    let animals = [];
+    let gameOver = false;
+    let firstDrop = false;
+    let mouseX = canvas.width / 2;
+    let nextEmojiObj = getNextEmoji();
+    let playerName = prompt("あなたの名前を入力してください：") || "ななし";
+
+    const dropSound = document.getElementById("dropSound");
+    const dropButton = document.getElementById("dropButton");
+    const resetButton = document.getElementById("reset");
+    const gameOverDiv = document.getElementById("gameover");
+    const finalScoreDiv = document.getElementById("finalScore");
+    const liveScoreDiv = document.getElementById("liveScore");
+
+    window.addEventListener('mousemove', e => mouseX = e.clientX);
+    window.addEventListener('touchmove', e => {
+      if (e.touches.length > 0) mouseX = e.touches[0].clientX;
+    });
+
+    dropButton.addEventListener('click', () => {
+      dropSound.play().catch(() => {});
+      dropEmoji();
+    });
+
+    dropButton.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      dropSound.play().catch(() => {});
+      dropEmoji();
+    }, { passive: false });
+
+    resetButton.addEventListener('click', () => {
+      for (const body of animals) World.remove(world, body);
+      animals = [];
+      gameOver = false;
+      firstDrop = false;
+      nextEmojiObj = getNextEmoji();
+      gameOverDiv.style.display = 'none';
+      resetButton.style.display = 'none';
+      finalScoreDiv.style.display = 'none';
+    });
+
+    Events.on(engine, 'beforeUpdate', () => {
+      if (gameOver) return;
+      for (const body of animals) {
+        const bottom = body.position.y + body.bounds.max.y - body.position.y;
+        if (bottom > platform.position.y + platformHeight / 2 + 20 &&
+            (body.position.x < platform.position.x - platformWidth / 2 ||
+             body.position.x > platform.position.x + platformWidth / 2)) {
+          gameOver = true;
+          gameOverDiv.style.display = 'block';
+          resetButton.style.display = 'block';
+          finalScoreDiv.innerText = `スコア: ${countOnPlatform()}個`;
+          finalScoreDiv.style.display = 'block';
+          break;
+        }
+      }
+      liveScoreDiv.innerText = `スコア: ${countOnPlatform()}個`;
+    });
+
+    function dropEmoji() {
+      if (gameOver) return;
+      if (!firstDrop) firstDrop = true;
+      const { emoji, width, height } = nextEmojiObj;
+      const body = Bodies.rectangle(mouseX, 0, width, height, {
+        restitution: 0.2,
+        friction: 0.8,
+        angle: 0,
+        render: {
+          sprite: {
+            texture: createEmojiDataURL(emoji, width, height),
+            xScale: 1,
+            yScale: 1
+          }
+        }
+      });
+      World.add(world, body);
+      animals.push(body);
+      nextEmojiObj = getNextEmoji();
+    }
+
+    function getNextEmoji() {
+      const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+      const size = 48;
+      return { emoji, width: size, height: size };
+    }
+
+    function createEmojiDataURL(emoji, width, height) {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.font = `${Math.min(width, height) * 0.9}px serif`;
+      tempCtx.textAlign = 'center';
+      tempCtx.textBaseline = 'middle';
+      tempCtx.fillText(emoji, width / 2, height / 2);
+      return tempCanvas.toDataURL();
+    }
+
+    function countOnPlatform() {
+      return animals.filter(body => {
+        const bottom = body.position.y + body.bounds.max.y - body.position.y;
+        return (
+          bottom <= platform.position.y + platformHeight / 2 + 10 &&
+          body.position.x >= platform.position.x - platformWidth / 2 &&
+          body.position.x <= platform.position.x + platformWidth / 2
+        );
+      }).length;
+    }
+
+    function drawNextEmojiPreview() {
+      ctx.clearRect(0, 0, canvas.width, 100); // 100px上部のみをクリア
+      ctx.font = `${nextEmojiObj.height}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(nextEmojiObj.emoji, mouseX, 80); // UIと被らない高さに固定
+      requestAnimationFrame(drawNextEmojiPreview);
+    }
+
+    drawNextEmojiPreview();
+  </script>
+</body>
+</html>
