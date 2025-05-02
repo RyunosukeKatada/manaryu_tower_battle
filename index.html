@@ -1,262 +1,41 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>タワーバトル</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #b3ecff;
-      overflow: hidden;
-      height: 100%;
-      touch-action: none;
-      font-family: 'Segoe UI', sans-serif;
-    }
-    canvas {
-      display: block;
-    }
-    #uiContainer {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-      z-index: 10;
-    }
-    #gameover, #finalScore, #reset {
-      display: none;
-      margin: 12px auto;
-    }
-    #gameover {
-      font-size: 36px;
-      color: red;
-      font-weight: bold;
-    }
-    #finalScore {
-      font-size: 24px;
-      color: #333;
-    }
-    #reset {
-      font-size: 18px;
-      padding: 12px 24px;
-      background: #ffffffcc;
-      border: 2px solid #888;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    #dropButton {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 22px;
-      padding: 14px 32px;
-      background: linear-gradient(to bottom, #ffd700, #ffa500);
-      border: 2px solid #aa7700;
-      border-radius: 12px;
-      cursor: pointer;
-      z-index: 11;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    }
-    #dropButton:hover {
-      background: linear-gradient(to bottom, #ffe066, #ff9900);
-    }
-    #liveScore {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      font-size: 24px;
-      color: #333;
-      background: rgba(255,255,255,0.8);
-      padding: 10px 20px;
-      border-radius: 12px;
-      z-index: 10;
-    }
-  </style>
-</head>
-<body>
-  <div id="uiContainer">
-    <div id="gameover">GAME OVER</div>
-    <div id="finalScore"></div>
-    <button id="reset">リセット</button>
-  </div>
-  <button id="dropButton">ドロップ</button>
-  <div id="liveScore">スコア: 0</div>
+<canvas id="emojiCanvas"></canvas>
+<script>
+  const canvas = document.getElementById('emojiCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-  <audio id="dropSound" src="https://soundeffect-lab.info/sound/button/mp3/decision29.mp3"></audio>
+  let mouseX = canvas.width / 2;
+  let nextEmoji = getNextEmoji();
 
-  <script>
-    const { Engine, Render, Runner, World, Bodies, Body, Events } = Matter;
-    const GAME_WIDTH = window.innerWidth;
-    const GAME_HEIGHT = window.innerHeight;
-    const engine = Engine.create();
-    const { world } = engine;
-    engine.gravity.y = 0.4;
-
-    const render = Render.create({
-      element: document.body,
-      engine: engine,
-      options: {
-        width: GAME_WIDTH,
-        height: GAME_HEIGHT,
-        wireframes: false,
-        background: '#b3ecff'
-      }
-    });
-
-    Render.run(render);
-    const runner = Runner.create();
-    Runner.run(runner, engine);
-
-    const platformWidth = GAME_WIDTH * 0.6;
-    const platformHeight = 40;
-    const platform = Bodies.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - 80, platformWidth, platformHeight, {
-      isStatic: true,
-      render: {
-        sprite: {
-          texture: "https://i.imgur.com/wv4Y3yI.png", // 高品質の崖画像に差し替え
-          xScale: platformWidth / 512,
-          yScale: platformHeight / 128
-        }
-      }
-    });
-    World.add(world, platform);
-
-    let animals = [];
-    let gameOver = false;
-    let firstDrop = false;
+  function getNextEmoji() {
     const emojis = ['🦁','🐶','🐱','🐼','🐸','🐧','🦊','🐵','🐷','🦄','🐥','🐨'];
-    let mouseX = GAME_WIDTH / 2;
-    let playerName = prompt("あなたの名前を入力してください：") || "ななし";
+    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+    return {
+      emoji,
+      width: 40,
+      height: 40
+    };
+  }
 
-    const gameOverDiv = document.getElementById("gameover");
-    const resetButton = document.getElementById("reset");
-    const dropButton = document.getElementById("dropButton");
-    const liveScoreDiv = document.getElementById("liveScore");
-    const finalScoreDiv = document.getElementById("finalScore");
-    const dropSound = document.getElementById("dropSound");
+  window.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+  });
 
-    function updateMouseX(e) {
-      if (e.touches && e.touches.length > 0) {
-        mouseX = e.touches[0].clientX - render.canvas.getBoundingClientRect().left;
-      } else {
-        mouseX = e.clientX - render.canvas.getBoundingClientRect().left;
-      }
+  window.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 0) {
+      mouseX = e.touches[0].clientX;
     }
+  });
 
-    window.addEventListener('mousemove', updateMouseX);
-    window.addEventListener('touchmove', updateMouseX);
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = `${nextEmoji.height}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(nextEmoji.emoji, mouseX, 40);
+    requestAnimationFrame(draw);
+  }
 
-    let nextEmojiObj = createNextEmoji();
-
-    function handleDrop(e) {
-      e.preventDefault();
-      if (gameOver) return;
-      if (!firstDrop) {
-        firstDrop = true;
-      }
-
-      const { emoji, width, height, texture } = nextEmojiObj;
-      const block = Bodies.rectangle(mouseX, 0, width, height, {
-        restitution: 0.2,
-        friction: 0.8,
-        angle: 0,
-        render: {
-          sprite: {
-            texture,
-            xScale: 1,
-            yScale: 1
-          }
-        }
-      });
-      World.add(world, block);
-      animals.push(block);
-      nextEmojiObj = createNextEmoji();
-      dropSound.currentTime = 0;
-      dropSound.play();
-    }
-
-    dropButton.addEventListener('click', handleDrop);
-    dropButton.addEventListener('touchstart', handleDrop, { passive: false });
-
-    Events.on(engine, 'beforeUpdate', () => {
-      if (gameOver) return;
-      for (const body of animals) {
-        const bottom = body.position.y + body.bounds.max.y - body.position.y;
-        if (bottom > platform.position.y + platformHeight / 2 + 20 &&
-            (body.position.x < platform.position.x - platformWidth / 2 ||
-             body.position.x > platform.position.x + platformWidth / 2)) {
-          gameOver = true;
-          gameOverDiv.style.display = 'block';
-          resetButton.style.display = 'block';
-          const score = countOnPlatform();
-          finalScoreDiv.innerText = `スコア: ${score}個`;
-          finalScoreDiv.style.display = 'block';
-          console.log(`${playerName}: ${score}`);
-          break;
-        }
-      }
-      liveScoreDiv.innerText = `スコア: ${countOnPlatform()}個`;
-    });
-
-    Events.on(render, 'afterRender', () => {
-      if (gameOver || !nextEmojiObj) return;
-      const ctx = render.context;
-      const { emoji, width, height } = nextEmojiObj;
-      ctx.font = `${Math.min(width, height)}px serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(emoji, mouseX, 40);
-    });
-
-    function createEmojiDataURL(emoji, width, height) {
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.font = `${Math.min(width, height) * 0.9}px serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(emoji, width / 2, height / 2);
-      return canvas.toDataURL();
-    }
-
-    function createNextEmoji() {
-      const baseSize = Math.min(GAME_WIDTH, GAME_HEIGHT) * 0.06;
-      const scale = 0.9;
-      const width = baseSize * scale;
-      const height = baseSize * scale;
-      const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-      const texture = createEmojiDataURL(emoji, width, height);
-      return { emoji, width, height, texture };
-    }
-
-    function countOnPlatform() {
-      return animals.filter(body => {
-        const bottom = body.position.y + body.bounds.max.y - body.position.y;
-        return (
-          bottom <= platform.position.y + platformHeight / 2 + 10 &&
-          body.position.x >= platform.position.x - platformWidth / 2 &&
-          body.position.x <= platform.position.x + platformWidth / 2
-        );
-      }).length;
-    }
-
-    resetButton.addEventListener('click', () => {
-      for (const body of animals) {
-        World.remove(world, body);
-      }
-      animals = [];
-      gameOver = false;
-      firstDrop = false;
-      gameOverDiv.style.display = 'none';
-      resetButton.style.display = 'none';
-      finalScoreDiv.style.display = 'none';
-      nextEmojiObj = createNextEmoji();
-    });
-  </script>
-</body>
-</html>
+  draw();
+</script>
