@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>のすけタワーバトル</title>
+  <title>タワーバトル</title>
   <style>
     html, body {
       margin: 0;
@@ -17,53 +17,34 @@
     canvas {
       display: block;
     }
-    #title, #gameover, #score {
-      position: absolute;
-      font-size: 32px;
-      color: #333;
-      font-weight: bold;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255,255,255,0.8);
-      padding: 10px 20px;
-      border-radius: 12px;
-      z-index: 10;
-      text-align: center;
-    }
-    #gameover {
-      top: 40%;
-      font-size: 36px;
-      color: red;
-      display: none;
-    }
-    #finalScore {
+    #uiContainer {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 10;
+    }
+    #gameover, #finalScore, #reset {
+      display: none;
+      margin: 12px auto;
+    }
+    #gameover {
+      font-size: 36px;
+      color: red;
+      font-weight: bold;
+    }
+    #finalScore {
       font-size: 24px;
       color: #333;
-      background: rgba(255,255,255,0.8);
-      padding: 10px 20px;
-      border-radius: 12px;
-      z-index: 10;
-      text-align: center;
-      display: none;
     }
     #reset {
-      position: absolute;
-      top: 60%;
-      left: 50%;
-      transform: translate(-50%, -50%);
       font-size: 18px;
       padding: 12px 24px;
       background: #ffffffcc;
       border: 2px solid #888;
       border-radius: 8px;
       cursor: pointer;
-      display: none;
-      z-index: 11;
     }
     #dropButton {
       position: absolute;
@@ -92,10 +73,11 @@
   </style>
 </head>
 <body>
-  <div id="title">のすけタワーバトル</div>
-  <div id="gameover">GAME OVER</div>
-  <div id="finalScore"></div>
-  <button id="reset">リセット</button>
+  <div id="uiContainer">
+    <div id="gameover">GAME OVER</div>
+    <div id="finalScore"></div>
+    <button id="reset">リセット</button>
+  </div>
   <button id="dropButton">落とす！</button>
   <div id="liveScore">スコア: 0</div>
 
@@ -107,7 +89,6 @@
 
     const GAME_WIDTH = window.innerWidth;
     const GAME_HEIGHT = window.innerHeight;
-
     const engine = Engine.create();
     const { world } = engine;
     engine.gravity.y = 0.4;
@@ -128,23 +109,27 @@
     Runner.run(runner, engine);
 
     const platformWidth = GAME_WIDTH * 0.6;
-    const platformHeight = 20;
+    const platformHeight = 40;
     const platform = Bodies.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - 80, platformWidth, platformHeight, {
       isStatic: true,
-      chamfer: { radius: 10 },
-      render: { fillStyle: '#888' }
+      render: {
+        sprite: {
+          texture: "https://i.imgur.com/4Y1KzVH.png", // 崖っぽいテクスチャ画像
+          xScale: platformWidth / 512,
+          yScale: platformHeight / 128
+        }
+      }
     });
     World.add(world, platform);
 
     let animals = [];
     let gameOver = false;
     let firstDrop = false;
-    const emojis = ['🦁', '🐶', '🐱', '🐼', '🐸', '🐧', '🦊', '🐵', '🐷', '🦄', '🐥', '🐨'];
-
+    const emojis = ['🦁','🐶','🐱','🐼','🐸','🐧','🦊','🐵','🐷','🦄','🐥','🐨'];
     let mouseX = GAME_WIDTH / 2;
+    let playerName = prompt("あなたの名前を入力してください：") || "ななし";
 
     const gameOverDiv = document.getElementById("gameover");
-    const titleDiv = document.getElementById("title");
     const resetButton = document.getElementById("reset");
     const dropButton = document.getElementById("dropButton");
     const liveScoreDiv = document.getElementById("liveScore");
@@ -168,7 +153,6 @@
       e.preventDefault();
       if (gameOver) return;
       if (!firstDrop) {
-        titleDiv.style.display = "none";
         firstDrop = true;
       }
 
@@ -187,9 +171,7 @@
       });
       World.add(world, block);
       animals.push(block);
-
       nextEmojiObj = createNextEmoji();
-
       dropSound.currentTime = 0;
       dropSound.play();
     }
@@ -207,8 +189,9 @@
           gameOver = true;
           gameOverDiv.style.display = 'block';
           resetButton.style.display = 'block';
-          finalScoreDiv.innerText = `あなたのスコア: ${countOnPlatform()}`;
+          finalScoreDiv.innerText = `${playerName} のスコア：${countOnPlatform()} 個`;
           finalScoreDiv.style.display = 'block';
+          console.log(`${playerName}: ${countOnPlatform()}`);
           break;
         }
       }
@@ -239,8 +222,8 @@
 
     function createNextEmoji() {
       const baseSize = Math.min(GAME_WIDTH, GAME_HEIGHT) * 0.06;
-      const scale = 0.7 + Math.random() * 0.6;
-      const width = baseSize * scale * (0.8 + Math.random() * 0.4);
+      const scale = 0.9;
+      const width = baseSize * scale;
       const height = baseSize * scale;
       const emoji = emojis[Math.floor(Math.random() * emojis.length)];
       const texture = createEmojiDataURL(emoji, width, height);
@@ -267,7 +250,6 @@
       firstDrop = false;
       gameOverDiv.style.display = 'none';
       resetButton.style.display = 'none';
-      titleDiv.style.display = 'block';
       finalScoreDiv.style.display = 'none';
       nextEmojiObj = createNextEmoji();
     });
