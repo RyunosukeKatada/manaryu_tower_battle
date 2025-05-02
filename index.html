@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>タワーバトル</title>
   <style>
     html, body {
@@ -51,13 +51,17 @@
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 24px;
-      padding: 12px 24px;
-      background: #ffcc00;
-      border: 2px solid #888;
-      border-radius: 8px;
+      font-size: 22px;
+      padding: 14px 32px;
+      background: linear-gradient(to bottom, #ffd700, #ffa500);
+      border: 2px solid #aa7700;
+      border-radius: 12px;
       cursor: pointer;
       z-index: 11;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    #dropButton:hover {
+      background: linear-gradient(to bottom, #ffe066, #ff9900);
     }
     #liveScore {
       position: absolute;
@@ -78,7 +82,7 @@
     <div id="finalScore"></div>
     <button id="reset">リセット</button>
   </div>
-  <button id="dropButton">落とす！</button>
+  <button id="dropButton">ドロップ</button>
   <div id="liveScore">スコア: 0</div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
@@ -86,7 +90,6 @@
 
   <script>
     const { Engine, Render, Runner, World, Bodies, Body, Events } = Matter;
-
     const GAME_WIDTH = window.innerWidth;
     const GAME_HEIGHT = window.innerHeight;
     const engine = Engine.create();
@@ -114,7 +117,7 @@
       isStatic: true,
       render: {
         sprite: {
-          texture: "https://i.imgur.com/4Y1KzVH.png", // 崖っぽいテクスチャ画像
+          texture: "https://i.imgur.com/wv4Y3yI.png", // 高品質の崖画像に差し替え
           xScale: platformWidth / 512,
           yScale: platformHeight / 128
         }
@@ -189,13 +192,14 @@
           gameOver = true;
           gameOverDiv.style.display = 'block';
           resetButton.style.display = 'block';
-          finalScoreDiv.innerText = `${playerName} のスコア：${countOnPlatform()} 個`;
+          const score = countOnPlatform();
+          finalScoreDiv.innerText = `スコア: ${score}個`;
           finalScoreDiv.style.display = 'block';
-          console.log(`${playerName}: ${countOnPlatform()}`);
+          console.log(`${playerName}: ${score}`);
           break;
         }
       }
-      liveScoreDiv.innerText = `スコア: ${countOnPlatform()}`;
+      liveScoreDiv.innerText = `スコア: ${countOnPlatform()}個`;
     });
 
     Events.on(render, 'afterRender', () => {
