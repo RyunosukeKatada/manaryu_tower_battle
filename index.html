@@ -9,31 +9,51 @@
       margin: 0;
       padding: 0;
       background: #b3ecff;
-      overflow: hidden; /* ← スクロール防止 */
+      overflow: hidden;
       height: 100%;
-      touch-action: none; /* ← スマホスクロール防止 */
+      touch-action: none;
+      font-family: 'Segoe UI', sans-serif;
     }
     canvas {
       display: block;
     }
-    #gameover, #title {
+    #title, #gameover, #score {
       position: absolute;
       font-size: 32px;
-      color: red;
+      color: #333;
       font-weight: bold;
-      top: 40%;
+      top: 20px;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translateX(-50%);
       background: rgba(255,255,255,0.8);
-      padding: 20px;
+      padding: 10px 20px;
       border-radius: 12px;
       z-index: 10;
-      display: none;
       text-align: center;
+    }
+    #gameover {
+      top: 40%;
+      font-size: 36px;
+      color: red;
+      display: none;
+    }
+    #finalScore {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 24px;
+      color: #333;
+      background: rgba(255,255,255,0.8);
+      padding: 10px 20px;
+      border-radius: 12px;
+      z-index: 10;
+      text-align: center;
+      display: none;
     }
     #reset {
       position: absolute;
-      top: 55%;
+      top: 60%;
       left: 50%;
       transform: translate(-50%, -50%);
       font-size: 18px;
@@ -45,15 +65,42 @@
       display: none;
       z-index: 11;
     }
+    #dropButton {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 24px;
+      padding: 12px 24px;
+      background: #ffcc00;
+      border: 2px solid #888;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 11;
+    }
+    #liveScore {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 24px;
+      color: #333;
+      background: rgba(255,255,255,0.8);
+      padding: 10px 20px;
+      border-radius: 12px;
+      z-index: 10;
+    }
   </style>
 </head>
 <body>
   <div id="title">のすけタワーバトル</div>
   <div id="gameover">GAME OVER</div>
+  <div id="finalScore"></div>
   <button id="reset">リセット</button>
+  <button id="dropButton">落とす！</button>
+  <div id="liveScore">スコア: 0</div>
 
-  <!-- Matter.js 読み込み -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <audio id="dropSound" src="https://soundeffect-lab.info/sound/button/mp3/decision29.mp3"></audio>
 
   <script>
     const { Engine, Render, Runner, World, Bodies, Body, Events } = Matter;
@@ -80,7 +127,7 @@
     const runner = Runner.create();
     Runner.run(runner, engine);
 
-    const platformWidth = GAME_WIDTH * 0.4;
+    const platformWidth = GAME_WIDTH * 0.6;
     const platformHeight = 20;
     const platform = Bodies.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - 80, platformWidth, platformHeight, {
       isStatic: true,
@@ -99,8 +146,11 @@
     const gameOverDiv = document.getElementById("gameover");
     const titleDiv = document.getElementById("title");
     const resetButton = document.getElementById("reset");
+    const dropButton = document.getElementById("dropButton");
+    const liveScoreDiv = document.getElementById("liveScore");
+    const finalScoreDiv = document.getElementById("finalScore");
+    const dropSound = document.getElementById("dropSound");
 
-    // タッチ＆マウス座標取得
     function updateMouseX(e) {
       if (e.touches && e.touches.length > 0) {
         mouseX = e.touches[0].clientX - render.canvas.getBoundingClientRect().left;
@@ -112,7 +162,6 @@
     window.addEventListener('mousemove', updateMouseX);
     window.addEventListener('touchmove', updateMouseX);
 
-    // 次のブロック表示用
     let nextEmojiObj = createNextEmoji();
 
     function handleDrop(e) {
@@ -123,11 +172,11 @@
         firstDrop = true;
       }
 
-      const { emoji, width, height, angle, texture } = nextEmojiObj;
+      const { emoji, width, height, texture } = nextEmojiObj;
       const block = Bodies.rectangle(mouseX, 0, width, height, {
         restitution: 0.2,
         friction: 0.8,
-        angle: angle,
+        angle: 0,
         render: {
           sprite: {
             texture,
@@ -140,10 +189,13 @@
       animals.push(block);
 
       nextEmojiObj = createNextEmoji();
+
+      dropSound.currentTime = 0;
+      dropSound.play();
     }
 
-    window.addEventListener('click', handleDrop);
-    window.addEventListener('touchstart', handleDrop, { passive: false });
+    dropButton.addEventListener('click', handleDrop);
+    dropButton.addEventListener('touchstart', handleDrop, { passive: false });
 
     Events.on(engine, 'beforeUpdate', () => {
       if (gameOver) return;
@@ -155,9 +207,12 @@
           gameOver = true;
           gameOverDiv.style.display = 'block';
           resetButton.style.display = 'block';
+          finalScoreDiv.innerText = `あなたのスコア: ${countOnPlatform()}`;
+          finalScoreDiv.style.display = 'block';
           break;
         }
       }
+      liveScoreDiv.innerText = `スコア: ${countOnPlatform()}`;
     });
 
     Events.on(render, 'afterRender', () => {
@@ -187,10 +242,20 @@
       const scale = 0.7 + Math.random() * 0.6;
       const width = baseSize * scale * (0.8 + Math.random() * 0.4);
       const height = baseSize * scale;
-      const angle = (Math.random() - 0.5) * Math.PI / 6;
       const emoji = emojis[Math.floor(Math.random() * emojis.length)];
       const texture = createEmojiDataURL(emoji, width, height);
-      return { emoji, width, height, angle, texture };
+      return { emoji, width, height, texture };
+    }
+
+    function countOnPlatform() {
+      return animals.filter(body => {
+        const bottom = body.position.y + body.bounds.max.y - body.position.y;
+        return (
+          bottom <= platform.position.y + platformHeight / 2 + 10 &&
+          body.position.x >= platform.position.x - platformWidth / 2 &&
+          body.position.x <= platform.position.x + platformWidth / 2
+        );
+      }).length;
     }
 
     resetButton.addEventListener('click', () => {
@@ -203,6 +268,7 @@
       gameOverDiv.style.display = 'none';
       resetButton.style.display = 'none';
       titleDiv.style.display = 'block';
+      finalScoreDiv.style.display = 'none';
       nextEmojiObj = createNextEmoji();
     });
   </script>
