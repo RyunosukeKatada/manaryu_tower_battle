@@ -2,25 +2,23 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>のすけタワーバトル</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
       background: #b3ecff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
+      overflow: hidden; /* ← スクロール防止 */
+      height: 100%;
+      touch-action: none; /* ← スマホスクロール防止 */
     }
     canvas {
-      background: #b3ecff;
-      border: 2px solid #333;
       display: block;
     }
     #gameover, #title {
       position: absolute;
-      font-size: 48px;
+      font-size: 32px;
       color: red;
       font-weight: bold;
       top: 40%;
@@ -31,13 +29,14 @@
       border-radius: 12px;
       z-index: 10;
       display: none;
+      text-align: center;
     }
     #reset {
       position: absolute;
       top: 55%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: 20px;
+      font-size: 18px;
       padding: 12px 24px;
       background: #ffffffcc;
       border: 2px solid #888;
@@ -52,12 +51,15 @@
   <div id="title">のすけタワーバトル</div>
   <div id="gameover">GAME OVER</div>
   <button id="reset">リセット</button>
+
+  <!-- Matter.js 読み込み -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+
   <script>
     const { Engine, Render, Runner, World, Bodies, Body, Events } = Matter;
 
-    const GAME_WIDTH = 800;
-    const GAME_HEIGHT = 600;
+    const GAME_WIDTH = window.innerWidth;
+    const GAME_HEIGHT = window.innerHeight;
 
     const engine = Engine.create();
     const { world } = engine;
@@ -78,7 +80,7 @@
     const runner = Runner.create();
     Runner.run(runner, engine);
 
-    const platformWidth = 300;
+    const platformWidth = GAME_WIDTH * 0.4;
     const platformHeight = 20;
     const platform = Bodies.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - 80, platformWidth, platformHeight, {
       isStatic: true,
@@ -98,24 +100,29 @@
     const titleDiv = document.getElementById("title");
     const resetButton = document.getElementById("reset");
 
-    // 次に落とすブロックの情報を保持
+    // タッチ＆マウス座標取得
+    function updateMouseX(e) {
+      if (e.touches && e.touches.length > 0) {
+        mouseX = e.touches[0].clientX - render.canvas.getBoundingClientRect().left;
+      } else {
+        mouseX = e.clientX - render.canvas.getBoundingClientRect().left;
+      }
+    }
+
+    window.addEventListener('mousemove', updateMouseX);
+    window.addEventListener('touchmove', updateMouseX);
+
+    // 次のブロック表示用
     let nextEmojiObj = createNextEmoji();
 
-    // マウスX座標追従
-    window.addEventListener('mousemove', (e) => {
-      const rect = render.canvas.getBoundingClientRect();
-      mouseX = e.clientX - rect.left;
-    });
-
-    // クリックで落下
-    window.addEventListener('click', () => {
+    function handleDrop(e) {
+      e.preventDefault();
       if (gameOver) return;
       if (!firstDrop) {
         titleDiv.style.display = "none";
         firstDrop = true;
       }
 
-      // 事前生成されたブロックを落とす
       const { emoji, width, height, angle, texture } = nextEmojiObj;
       const block = Bodies.rectangle(mouseX, 0, width, height, {
         restitution: 0.2,
@@ -132,14 +139,14 @@
       World.add(world, block);
       animals.push(block);
 
-      // 次のブロックを準備
       nextEmojiObj = createNextEmoji();
-    });
+    }
 
-    // GAME OVER 判定
+    window.addEventListener('click', handleDrop);
+    window.addEventListener('touchstart', handleDrop, { passive: false });
+
     Events.on(engine, 'beforeUpdate', () => {
       if (gameOver) return;
-
       for (const body of animals) {
         const bottom = body.position.y + body.bounds.max.y - body.position.y;
         if (bottom > platform.position.y + platformHeight / 2 + 20 &&
@@ -153,19 +160,16 @@
       }
     });
 
-    // "次に落ちるブロック"をCanvasで表示
     Events.on(render, 'afterRender', () => {
       if (gameOver || !nextEmojiObj) return;
-
       const ctx = render.context;
       const { emoji, width, height } = nextEmojiObj;
       ctx.font = `${Math.min(width, height)}px serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(emoji, mouseX, 40); // 高さ固定・Xはマウスに追従
+      ctx.fillText(emoji, mouseX, 40);
     });
 
-    // 絵文字用テクスチャ生成
     function createEmojiDataURL(emoji, width, height) {
       const canvas = document.createElement('canvas');
       canvas.width = width;
@@ -178,9 +182,8 @@
       return canvas.toDataURL();
     }
 
-    // 次に落とす絵文字の生成
     function createNextEmoji() {
-      const baseSize = 48;
+      const baseSize = Math.min(GAME_WIDTH, GAME_HEIGHT) * 0.06;
       const scale = 0.7 + Math.random() * 0.6;
       const width = baseSize * scale * (0.8 + Math.random() * 0.4);
       const height = baseSize * scale;
@@ -190,7 +193,6 @@
       return { emoji, width, height, angle, texture };
     }
 
-    // リセット処理
     resetButton.addEventListener('click', () => {
       for (const body of animals) {
         World.remove(world, body);
