@@ -7,12 +7,12 @@
   <link href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" rel="stylesheet" />
   <style>
     html, body {
-      height: 90vh; width: 100vw;
+      height: 100vh; width: 100vw;
       margin: 0; padding: 0; overflow: hidden;
       background: #eef;
     }
     body {
-      height: 90vh; width: 100vw;
+      height: 100vh; width: 100vw;
       margin: 0; padding: 0;
       position: relative;
       overflow: hidden;
@@ -147,7 +147,7 @@
       document.body.onclick = null;
     }
     const globalObjectScale = 0.8;
-    const block = 20; // 推奨blockサイズ。十分な精度とパフォーマンスのバランス
+    const block = 10; // 推奨blockサイズ。十分な精度とパフォーマンスのバランス
     const images = [
       {src: 'images/dumbbell.png', scale: 0.1 * globalObjectScale},
       {src: 'images/fashion.png', scale: 0.12 * globalObjectScale},
@@ -362,7 +362,7 @@
         if (!body.isStatic) {
           if (body.parts && body.parts.length > 1) {
             for (const part of body.parts) {
-              if (!part.isSensor && part.bounds.max.y > BASE_Y + 100) {
+              if (!part.isSensor && part.bounds.max.y > BASE_Y + 300) {
                 isGameOver = true;
                 document.getElementById('gameOver').style.display = 'block';
                 document.getElementById('finalScore').textContent = `スコア: ${score}`;
@@ -373,7 +373,7 @@
               }
             }
           } else {
-            if (body.bounds.max.y > BASE_Y + 100) {
+            if (body.bounds.max.y > BASE_Y + 300) {
               isGameOver = true;
               document.getElementById('gameOver').style.display = 'block';
               document.getElementById('finalScore').textContent = `スコア: ${score}`;
