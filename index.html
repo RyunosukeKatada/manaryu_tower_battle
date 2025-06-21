@@ -7,31 +7,36 @@
   <link href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" rel="stylesheet" />
   <style>
     html, body {
-      height: 100vh;
-      width: 100vw;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
+      height: 100vh; width: 100vw;
+      margin: 0; padding: 0; overflow: hidden;
       background: #eef;
     }
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh; width: 100vw;
+    }
     #canvasWrapper {
+      flex: 1 1 0%;
       position: relative;
       width: 100vw;
-      height: 100vh;
+      height: 100%;
       max-width: none;
       max-height: none;
-      padding-bottom: 0;
+      min-height: 0; /* for safari */
+      min-width: 0;
     }
     #canvasBackground {
       position: absolute;
       top: 0; left: 0;
-      width: 100vw; height: 100vh;
+      width: 100vw; height: 100%;
       background: url('images/background.png') center/cover no-repeat;
       opacity: 0.25; z-index: 0;
     }
     #gameCanvas {
       width: 100vw !important;
-      height: 100vh !important;
+      height: 100% !important;
+      min-height: 0;
       display: block;
       background: transparent;
       z-index: 1;
@@ -39,8 +44,6 @@
       touch-action: none;
     }
     .controls {
-      position: absolute;
-      left: 0; right: 0; bottom: 0;
       width: 100vw;
       display: flex;
       justify-content: space-between;
@@ -49,7 +52,7 @@
       background: rgba(255, 255, 255, 0.85);
       z-index: 2;
       box-sizing: border-box;
-      height: 13vh;
+      min-height: 55px;
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
@@ -59,7 +62,7 @@
       flex: 1 1 0;
       font-size: 2rem;
       min-width: 0;
-      min-height: 5.5vh;
+      min-height: 40px;
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
@@ -89,18 +92,18 @@
   <div id="scoreDisplay">スコア: 0</div>
   <div id="canvasWrapper">
     <div id="canvasBackground"></div>
-    <canvas id="gameCanvas" width="400" height="600"></canvas>
-    <div class="controls">
-      <button id="btnLeft">←</button>
-      <button id="btnLeftRot">左回し</button>
-      <button id="btnDrop">投下</button>
-      <button id="btnRightRot">右回し</button>
-      <button id="btnRight">→</button>
-    </div>
+    <canvas id="gameCanvas"></canvas>
     <div id="gameOver">
       <h3>Thank you for playing！</h3>
       <div id="finalScore"></div>
     </div>
+  </div>
+  <div class="controls">
+    <button id="btnLeft">←</button>
+    <button id="btnLeftRot">左回し</button>
+    <button id="btnDrop">投下</button>
+    <button id="btnRightRot">右回し</button>
+    <button id="btnRight">→</button>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
   <script>
@@ -124,9 +127,18 @@
     ];
     // 画面サイズ自動計算
     let SCREEN_WIDTH = window.innerWidth;
-    let SCREEN_HEIGHT = window.innerHeight;
+    // - controls(ボタン)の高さを引いてcanvas高さを計算
+    function getCanvasHeight() {
+      const controls = document.querySelector('.controls');
+      const nav = document.querySelector('nav');
+      // navの高さも引いて計算
+      let controlsH = controls ? controls.offsetHeight : 55;
+      let navH = nav ? nav.offsetHeight : 0;
+      return window.innerHeight - controlsH - navH - 4;
+    }
+    let SCREEN_HEIGHT = getCanvasHeight();
     let BASE_Y = Math.floor(SCREEN_HEIGHT * 0.93);
-    const BUTTON_HEIGHT = Math.floor(SCREEN_HEIGHT * 0.13);
+    const BUTTON_HEIGHT = 55;
     const {Engine, Render, Runner, World, Bodies, Body, Composite, Events} = Matter;
     const engine = Engine.create();
     engine.positionIterations = 16;
@@ -261,11 +273,9 @@
     // ボタン長押し最適化
     function setupButtonHold(btnId, onStart, onEnd) {
       const btn = document.getElementById(btnId);
-      // PCマウス
       btn.addEventListener('mousedown', function(e) { e.preventDefault(); onStart(); });
       btn.addEventListener('mouseup', function(e) { e.preventDefault(); onEnd(); });
       btn.addEventListener('mouseleave', function(e) { e.preventDefault(); onEnd(); });
-      // スマホタッチ
       btn.addEventListener('touchstart', function(e){e.preventDefault();onStart();});
       btn.addEventListener('touchend', function(e){e.preventDefault();onEnd();});
       btn.addEventListener('touchcancel', function(e){e.preventDefault();onEnd();});
@@ -342,7 +352,17 @@
     spawnPreview();
     // 画面リサイズ対応
     window.addEventListener('resize', () => {
-      location.reload();
+      // canvas高さ・台座高さを更新
+      SCREEN_WIDTH = window.innerWidth;
+      SCREEN_HEIGHT = getCanvasHeight();
+      BASE_Y = Math.floor(SCREEN_HEIGHT * 0.93);
+      canvas.width = SCREEN_WIDTH;
+      canvas.height = SCREEN_HEIGHT;
+      Render.setPixelRatio(render, window.devicePixelRatio || 1);
+      Render.lookAt(render, {
+        min: {x: 0, y: cameraY},
+        max: {x: SCREEN_WIDTH, y: cameraY + SCREEN_HEIGHT}
+      });
     });
   </script>
 </body>
