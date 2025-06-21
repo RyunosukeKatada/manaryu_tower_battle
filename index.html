@@ -50,19 +50,27 @@
       z-index: 2;
       box-sizing: border-box;
       height: 13vh;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: manipulation;
+    }
+    .controls button {
+      flex: 1 1 0;
+      font-size: 2rem;
+      min-width: 0;
+      min-height: 5.5vh;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: manipulation;
+      border-radius: 1em;
     }
     #scoreDisplay { text-align: center; font-weight: bold; margin: 0.5rem auto; }
     #gameOver {
       display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
       background: rgba(0, 0, 0, 0.75); color: white; padding: 2rem; border-radius: 1rem;
       text-align: center; z-index: 10;
-    }
-    #fullscreenBtn {
-      position: fixed;
-      top: 0.7rem; right: 0.7rem;
-      z-index: 30;
-      font-size: 1rem;
-      opacity: 0.8;
     }
   </style>
 </head>
@@ -75,7 +83,6 @@
       <li><a href="#" role="button" onclick="location.reload()">リセット</a></li>
     </ul>
   </nav>
-  <button id="fullscreenBtn" onclick="requestFullscreen();event.stopPropagation()">全画面</button>
   <audio id="bgm" src="audio/bgm.mp3" loop></audio>
   <audio id="seDrop" src="audio/se_drop.mp3"></audio>
   <audio id="seGameOver" src="audio/se_gameover.mp3"></audio>
@@ -84,11 +91,11 @@
     <div id="canvasBackground"></div>
     <canvas id="gameCanvas" width="400" height="600"></canvas>
     <div class="controls">
-      <button onmousedown="startMove(-1)" onmouseup="stopMove()" ontouchstart="startMove(-1)" ontouchend="stopMove()">←</button>
-      <button onmousedown="startRotate(-1)" onmouseup="stopRotate()" ontouchstart="startRotate(-1)" ontouchend="stopRotate()">左回し</button>
-      <button onclick="dropBlock()" ontouchend="dropBlock()">投下</button>
-      <button onmousedown="startRotate(1)" onmouseup="stopRotate()" ontouchstart="startRotate(1)" ontouchend="stopRotate()">右回し</button>
-      <button onmousedown="startMove(1)" onmouseup="stopMove()" ontouchstart="startMove(1)" ontouchend="stopMove()">→</button>
+      <button id="btnLeft">←</button>
+      <button id="btnLeftRot">左回し</button>
+      <button id="btnDrop">投下</button>
+      <button id="btnRightRot">右回し</button>
+      <button id="btnRight">→</button>
     </div>
     <div id="gameOver">
       <h3>Thank you for playing！</h3>
@@ -97,14 +104,6 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
   <script>
-    // フルスクリーンAPI
-    function requestFullscreen() {
-      const elem = document.documentElement;
-      if (elem.requestFullscreen) elem.requestFullscreen();
-      else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-      else if (elem.mozRequestFullScreen) elem.mozRequestFullScreen();
-      else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
-    }
     // スマホ用: BGMは初回タップでのみ再生可能
     let bgmStarted = false;
     function startBgmOnce() {
@@ -113,7 +112,7 @@
         const bgm = document.getElementById('bgm');
         bgm.play().catch(()=>{});
       }
-      document.body.onclick = null; // 2回目以降は不要
+      document.body.onclick = null;
     }
     const images = [
       {src: 'images/dumbbell.png', scale: 0.1},
@@ -126,7 +125,6 @@
     // 画面サイズ自動計算
     let SCREEN_WIDTH = window.innerWidth;
     let SCREEN_HEIGHT = window.innerHeight;
-    // 台座y座標も自動調整
     let BASE_Y = Math.floor(SCREEN_HEIGHT * 0.93);
     const BUTTON_HEIGHT = Math.floor(SCREEN_HEIGHT * 0.13);
     const {Engine, Render, Runner, World, Bodies, Body, Composite, Events} = Matter;
@@ -246,7 +244,6 @@
       }
       if (topY < cameraY + 0.6 * SCREEN_HEIGHT) {
         let targetY = topY - 0.3 * SCREEN_HEIGHT;
-        // targetY < 0 でも無限に上までOK！
         cameraTargetY = targetY;
       }
     }
@@ -260,6 +257,26 @@
       });
     }
     setInterval(updateCameraSmooth, 16);
+
+    // ボタン長押し最適化
+    function setupButtonHold(btnId, onStart, onEnd) {
+      const btn = document.getElementById(btnId);
+      // PCマウス
+      btn.addEventListener('mousedown', function(e) { e.preventDefault(); onStart(); });
+      btn.addEventListener('mouseup', function(e) { e.preventDefault(); onEnd(); });
+      btn.addEventListener('mouseleave', function(e) { e.preventDefault(); onEnd(); });
+      // スマホタッチ
+      btn.addEventListener('touchstart', function(e){e.preventDefault();onStart();});
+      btn.addEventListener('touchend', function(e){e.preventDefault();onEnd();});
+      btn.addEventListener('touchcancel', function(e){e.preventDefault();onEnd();});
+    }
+    setupButtonHold("btnLeft", ()=>startMove(-1), stopMove);
+    setupButtonHold("btnRight", ()=>startMove(1), stopMove);
+    setupButtonHold("btnLeftRot", ()=>startRotate(-1), stopRotate);
+    setupButtonHold("btnRightRot", ()=>startRotate(1), stopRotate);
+    // 投下はワンタップ
+    document.getElementById("btnDrop").addEventListener('click', dropBlock);
+    document.getElementById("btnDrop").addEventListener('touchend', function(e){e.preventDefault();dropBlock();});
 
     function startMove(dir) {
       if (!moveInterval) moveInterval = setInterval(() => {
