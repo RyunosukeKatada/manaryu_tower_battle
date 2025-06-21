@@ -146,8 +146,8 @@
       }
       document.body.onclick = null;
     }
-    const globalObjectScale = 1.0;
-    const block = 12; // ピクセル粒度・台座ブロックも同じサイズ
+    const globalObjectScale = 0.8;
+    const block = 10; // ピクセル粒度・台座ブロックも同じサイズ
     const images = [
       {src: 'images/dumbbell.png', scale: 0.1 * globalObjectScale},
       {src: 'images/fashion.png', scale: 0.12 * globalObjectScale},
@@ -201,7 +201,7 @@
         baseBlocks.push(Bodies.rectangle(
           leftX + x + block/2,
           BASE_Y,
-          block, 20,
+          block, 10,
           {isStatic: true, restitution: 0.0, friction: 0.8, frictionStatic: 1.0, render: {fillStyle: '#800020'}}
         ));
       }
