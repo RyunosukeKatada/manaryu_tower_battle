@@ -155,14 +155,8 @@
       {src: 'images/woman_barbell.png', scale: 0.2 * globalObjectScale},
       {src: 'images/woman_kimono.png', scale: 0.2 * globalObjectScale}
     ];
-    // 自動block粒度
-    function getBlockSize() {
-      // 画面幅800未満は9px、800～1600は15px、それ以上は25pxぐらいを目安に
-      const w = Math.max(window.innerWidth, window.innerHeight);
-      if (w > 1600) return 25;
-      if (w > 800) return 15;
-      return 9;
-    }
+    // 固定blockサイズ
+    const block = 50;
 
     let SCREEN_WIDTH = window.innerWidth;
     let SCREEN_HEIGHT = window.innerHeight;
@@ -228,7 +222,6 @@
         ctx.drawImage(img, 0, 0, w, h);
         const imageData = ctx.getImageData(0, 0, w, h);
         const parts = [];
-        const block = getBlockSize();
         let spawnY = cameraY + 40;
         for (let y = 0; y < h; y += block) {
           for (let x = 0; x < w; x += block) {
