@@ -2,124 +2,135 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>タワーバトル - Base64画像版</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>物理ブロックバトル</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" rel="stylesheet">
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: #eef;
-      font-family: sans-serif;
-      touch-action: none;
-    }
     canvas {
       display: block;
+      margin: auto;
+      background: #eef1f5;
+      border-radius: 8px;
+      max-width: 100%;
+      height: auto;
     }
-    #dropButton {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 12px 24px;
-      font-size: 20px;
-      background: #ffcc00;
-      border: 2px solid #888;
-      border-radius: 10px;
-      cursor: pointer;
-      z-index: 10;
+    .center {
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <button id="dropButton">ドロップ</button>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-  <script id="imageData" type="application/json">
-  {
-    "lion": {
-      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABuUlEQVRYR+2WMU7DMBBF30W0A3ZAE7ABO4ADugA7oAO6ADugA7UAXpTUtEkS5l6TSUVK8Nx2Hj92J/0XxZC2HppZpmzZyMITrda7UnuEpL8eLuMf6NYbPYCAuAxW9lhFhP8AOjGACyq4MddnM+5+qIG5VnQu4CpDA6xG+yMR6gnEJG5CXcOZ+AsY+QBBld6mvflFcAtC9QM6YuDSH4q6FEl4QPhOYCE4CC1Kjpc7XZGbXxZ8UpL0SJBtv4lt54rMY3x0oewfAxUJHZbdcE9+j6iv4KmrwKzDOqKJ3d+0eDbKRUlDXqqnh2M9+1jraM2mJPZZsRH9ybk/jqxZ7KXwrzrPNsx7T64FDslUAvlZ86zVm8B2a2A8AGa7vLDsv/hhZwlT3F1AtVSkTwIuJ5crbt/BThUdICnkOexFG3FbMJSnbY9+AsEAp9AHOyjNRIj7AsAAAAASUVORK5CYII=",
-      "weight": 3
-    },
-    "panda": {
-      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABbklEQVRYR+2WMU7DMBBFz+WQG9AEb0ATsAE7gATsAE7gATsAE7gATqfSrEkqTpMoUev+QzS5fV3dmYu0LgI+fVyrt9m6Fe7VkBR3p+OVPVRnNqBaRCgAlYDCaUMgDQEAoCI7fvmJQW34DMG9AZ4AHoBbQHuBiYBzETSw4RwFMYCEd7hTgeQpsDS4BWdz+8+omxPmtAW/4Et7+pXt1kcoDz+El+KsHrYOEFbl0MkPPpb19pgzYl53sF9jwBYwMjhcHCUw/Vb3Pj6mtyU+RqwFslUAnks7XlmJMyiWMSlme09k3yl1UL2F4w5JdnN41j7PwnOlzY7vcRhwq6FiM3bYWrwvO2hLYnP8E8GVaAlwUZj5NddUAAAAASUVORK5CYII=",
-      "weight": 2
-    },
-    "rabbit": {
-      "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABg0lEQVRYR+2WMU7DMBBFZ4xgDdoAXaADdgBdoAN2AF2gA3YAXaAC/SSpJMm0zItKRJNRx+CvPe5NvTzL9u1XPbx/jJD1Z0pxZlPXeULmnB2NgC6ATZfJbSpLaqzAf+hbiuAC8An4C7APv6jj0LRA/AYcD2EUoW9yYwgA+Gr8c4AG8AmQGjhtZvgC9WCKUbj1EqJmgAf8I7TSLbWr0BNh7FhEqJm3zRWECXYA9Yx+8rEjIybF4WbnOVkLOlL3rKcxTc93cKsybPWAdetQDWaVsFvBnO95ug28LONHKnBL1K7J5ErH3V4r9XcDRTjMyTSq4iA7iU9wRa+FTrX6m7mfTFyaV4cRqa9B4q3cdZp3HJK0xF7bhd+nC8WfoaYt0wAAAABJRU5ErkJggg==",
-      "weight": 1
+
+<nav class="container-fluid">
+  <ul>
+    <li><strong>ブロックバトル</strong></li>
+  </ul>
+  <ul>
+    <li><a href="#">遊び方</a></li>
+    <li><a href="#">画像変更</a></li>
+    <li><a href="#" role="button">リセット</a></li>
+  </ul>
+</nav>
+
+<main class="container">
+  <div class="grid">
+    <section>
+      <hgroup>
+        <h2>どうぶつ…じゃないけどタワーバトル</h2>
+        <h3>物理演算で画像を積んでいこう</h3>
+      </hgroup>
+      <p class="center">画面をタップ or クリックすると、ランダムなブロックが落ちます。</p>
+      <canvas id="gameCanvas" width="400" height="600"></canvas>
+    </section>
+  </div>
+</main>
+
+<section aria-label="Subscribe example">
+  <div class="container">
+    <article>
+      <hgroup>
+        <h2>ゲーム更新を受け取る</h2>
+        <h3>開発の進捗や素材募集などをお知らせ予定！</h3>
+      </hgroup>
+      <form class="grid">
+        <input type="text" id="firstname" name="firstname" placeholder="名前" aria-label="名前" required />
+        <input type="email" id="email" name="email" placeholder="メールアドレス" aria-label="メールアドレス" required />
+        <button type="submit" onclick="event.preventDefault()">登録</button>
+      </form>
+    </article>
+  </div>
+</section>
+
+<footer class="container">
+  <small><a href="#">GitHub</a> • <a href="#">利用規約</a></small>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+<script>
+  const { Engine, Render, Runner, Bodies, World, Events, Composite } = Matter;
+
+  const engine = Engine.create();
+  const world = engine.world;
+  const canvas = document.getElementById("gameCanvas");
+
+  const render = Render.create({
+    canvas: canvas,
+    engine: engine,
+    options: {
+      width: 400,
+      height: 600,
+      wireframes: false,
+      background: "#eef1f5"
     }
-  }
-  </script>
+  });
 
-  <script>
-    const { Engine, Render, Runner, World, Bodies, Events } = Matter;
+  Render.run(render);
+  const runner = Runner.create();
+  Runner.run(runner, engine);
 
-    const canvas = document.createElement('canvas');
-    document.body.appendChild(canvas);
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+  // 地面と壁
+  const ground = Bodies.rectangle(200, 610, 400, 60, { isStatic: true });
+  const leftWall = Bodies.rectangle(-10, 300, 20, 600, { isStatic: true });
+  const rightWall = Bodies.rectangle(410, 300, 20, 600, { isStatic: true });
+  World.add(world, [ground, leftWall, rightWall]);
 
-    const engine = Engine.create();
-    const world = engine.world;
-    engine.gravity.y = 0.4;
+  // ブロック画像一覧
+  const imageFiles = [
+    'images/dumbbell.png',
+    'images/fashion.png',
+    'images/motorcycle.png',
+    'images/man_kimono.png',
+    'images/woman_barbell.png',
+    'images/woman_kimono.png'
+  ];
 
-    const render = Render.create({
-      canvas: canvas,
-      engine: engine,
-      options: {
-        width: canvas.width,
-        height: canvas.height,
-        wireframes: false,
-        background: '#eef'
-      }
-    });
-    Render.run(render);
-    Runner.run(Runner.create(), engine);
-
-    // 台座
-    const platform = Bodies.rectangle(canvas.width / 2, canvas.height - 60, canvas.width * 0.6, 40, {
-      isStatic: true,
-      render: { fillStyle: '#888' }
-    });
-    World.add(world, platform);
-
-    // Base64画像データの読み込み
-    const imageData = JSON.parse(document.getElementById('imageData').textContent);
-    const animalList = Object.entries(imageData).map(([key, val]) => ({
-      name: key,
-      texture: val.data,
-      weight: val.weight
-    }));
-
-    // 重みによるランダム選択
-    function getWeightedAnimal() {
-      const total = animalList.reduce((sum, item) => sum + item.weight, 0);
-      let rand = Math.random() * total;
-      for (const item of animalList) {
-        if (rand < item.weight) return item;
-        rand -= item.weight;
-      }
-    }
-
-    // ドロップ処理
-    document.getElementById('dropButton').addEventListener('click', () => {
-      const animal = getWeightedAnimal();
-      const size = 64;
-      const x = canvas.width / 2;
-      const body = Bodies.rectangle(x, 0, size, size, {
-        restitution: 0.2,
-        friction: 0.8,
+  // ブロック生成
+  function dropRandomBlock() {
+    const imgSrc = imageFiles[Math.floor(Math.random() * imageFiles.length)];
+    const texture = new Image();
+    texture.src = imgSrc;
+    texture.onload = () => {
+      const w = 80, h = 80;
+      const block = Bodies.rectangle(200, 0, w, h, {
         render: {
           sprite: {
-            texture: animal.texture,
-            xScale: 1,
-            yScale: 1
+            texture: imgSrc,
+            xScale: w / texture.width,
+            yScale: h / texture.height
           }
         }
       });
-      World.add(world, body);
-    });
-  </script>
+      World.add(world, block);
+    };
+  }
+
+  // タップ・クリックでブロックを落とす
+  canvas.addEventListener("mousedown", dropRandomBlock);
+  canvas.addEventListener("touchstart", function(e) {
+    e.preventDefault();
+    dropRandomBlock();
+  }, { passive: false });
+
+</script>
 </body>
 </html>
