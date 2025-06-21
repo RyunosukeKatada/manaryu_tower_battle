@@ -147,7 +147,8 @@
       document.body.onclick = null;
     }
     const globalObjectScale = 0.8;
-    const block = 10; // 推奨blockサイズ。十分な精度とパフォーマンスのバランス
+    const block = 10; // ピクセル粒度（台座も一致）
+    const baseThickness = 40; // 台座の厚み強化
     const images = [
       {src: 'images/dumbbell.png', scale: 0.1 * globalObjectScale},
       {src: 'images/fashion.png', scale: 0.12 * globalObjectScale},
@@ -164,9 +165,10 @@
     const BUTTON_HEIGHT = 30;
     const {Engine, Render, Runner, World, Bodies, Body, Composite, Events} = Matter;
     const engine = Engine.create();
-    engine.positionIterations = 16;
-    engine.velocityIterations = 12;
-    engine.constraintIterations = 6;
+    // 高精度モード
+    engine.positionIterations = 24;
+    engine.velocityIterations = 16;
+    engine.constraintIterations = 8;
     const world = engine.world;
     const canvas = document.getElementById('gameCanvas');
     canvas.width = SCREEN_WIDTH * dpr;
@@ -191,7 +193,6 @@
     let baseBlocks = [];
 
     function createBase() {
-      // 既存を全削除
       baseBlocks.forEach(b => World.remove(world, b));
       baseBlocks = [];
       // 台座の幅を画面幅の70%に
@@ -201,8 +202,14 @@
         baseBlocks.push(Bodies.rectangle(
           leftX + x + block/2,
           BASE_Y,
-          block, 20,
-          {isStatic: true, restitution: 0.0, friction: 0.8, frictionStatic: 1.0, render: {fillStyle: '#800020'}}
+          block + 2, baseThickness, // 少し重ねる(+2)・厚み強化
+          {
+            isStatic: true,
+            restitution: 0.0,
+            friction: 0.8,
+            frictionStatic: 1.0,
+            render: {fillStyle: '#800020'}
+          }
         ));
       }
       World.add(world, baseBlocks);
@@ -268,6 +275,7 @@
     function dropBlock() {
       if (!previewBody) return;
       Body.setStatic(previewBody, false);
+      Body.setVelocity(previewBody, {x: 0, y: 0}); // 落下初速リセット
       document.getElementById('seDrop').play();
       monitorStability(previewBody);
       previewBody = null;
