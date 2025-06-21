@@ -356,7 +356,7 @@
         if (!body.isStatic) {
           if (body.parts && body.parts.length > 1) {
             for (const part of body.parts) {
-              if (!part.isSensor && part.bounds.max.y > BASE_Y + 100) {
+              if (!part.isSensor && part.bounds.max.y > BASE_Y + 400) {
                 isGameOver = true;
                 document.getElementById('gameOver').style.display = 'block';
                 document.getElementById('finalScore').textContent = `スコア: ${score}`;
