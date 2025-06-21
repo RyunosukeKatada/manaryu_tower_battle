@@ -12,84 +12,100 @@
       background: #eef;
     }
     body {
-      display: flex;
-      flex-direction: column;
       height: 100vh; width: 100vw;
+      margin: 0; padding: 0;
+      position: relative;
+      overflow: hidden;
     }
     #canvasWrapper {
-      flex: 1 1 0%;
       position: relative;
-      width: 100vw;
-      height: 100%;
-      max-width: none;
-      max-height: none;
-      min-height: 0; /* for safari */
-      min-width: 0;
+      width: 100vw; height: 100vh;
+      max-width: none; max-height: none;
+      min-height: 0; min-width: 0;
+      background: transparent;
     }
     #canvasBackground {
       position: absolute;
-      top: 0; left: 0;
-      width: 100vw; height: 100%;
+      top: 0; left: 0; width: 100vw; height: 100vh;
       background: url('images/background.png') center/cover no-repeat;
-      opacity: 0.25; z-index: 0;
+      opacity: 0.23; z-index: 0;
     }
     #gameCanvas {
-      width: 100vw !important;
-      height: 100% !important;
-      min-height: 0;
+      position: absolute; top: 0; left: 0;
+      width: 100vw !important; height: 100vh !important;
       display: block;
       background: transparent;
       z-index: 1;
-      position: relative;
       touch-action: none;
     }
+    /* 左上タイトル・スコア */
+    #topInfo {
+      position: absolute;
+      top: 8px; left: 10px;
+      z-index: 5;
+      color: #221;
+      background: rgba(255,255,255,0.6);
+      border-radius: 10px;
+      padding: 2px 10px;
+      font-size: 1.08rem;
+      font-weight: bold;
+      user-select: none;
+      pointer-events: none;
+    }
     .controls {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
       width: 100vw;
       display: flex;
       justify-content: space-between;
-      gap: 0.5rem;
-      padding: 0.5rem 0.5rem;
-      background: rgba(255, 255, 255, 0.85);
-      z-index: 2;
+      gap: 0.2rem;
+      padding: 0.23rem 0.23rem;
+      background: rgba(255,255,255,0.26);
+      z-index: 10;
       box-sizing: border-box;
-      min-height: 55px;
+      min-height: 30px;
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
       touch-action: manipulation;
+      box-shadow: 0 0 6px 2px rgba(255,255,255,0.2);
     }
     .controls button {
       flex: 1 1 0;
-      font-size: 2rem;
-      min-width: 0;
-      min-height: 40px;
+      font-size: 1.08rem;
+      min-width: 32px;
+      min-height: 24px;
+      max-width: 60px;
+      max-height: 32px;
+      padding: 0.13rem 0.13rem;
+      background: rgba(240,240,240,0.72);
+      opacity: 0.82;
       user-select: none;
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
-      touch-action: manipulation;
-      border-radius: 1em;
+      border-radius: 0.6em;
+      border: 1px solid #bbb;
+      box-shadow: 0 1px 2px 0 rgba(0,0,0,0.10);
+      transition: background 0.1s, opacity 0.2s;
     }
-    #scoreDisplay { text-align: center; font-weight: bold; margin: 0.5rem auto; }
+    .controls button:active {
+      background: #ffeedd;
+      opacity: 1;
+    }
     #gameOver {
       display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
       background: rgba(0, 0, 0, 0.75); color: white; padding: 2rem; border-radius: 1rem;
-      text-align: center; z-index: 10;
+      text-align: center; z-index: 20;
+    }
+    #gameOver h3 {
+      color: #fff;  /* ← ここで確実に白色指定 */
     }
   </style>
 </head>
 <body onclick="startBgmOnce()">
-  <nav class="container-fluid">
-    <ul>
-      <li><strong>りゅうまなタワーバトル</strong></li>
-    </ul>
-    <ul>
-      <li><a href="#" role="button" onclick="location.reload()">リセット</a></li>
-    </ul>
-  </nav>
   <audio id="bgm" src="audio/bgm.mp3" loop></audio>
   <audio id="seDrop" src="audio/se_drop.mp3"></audio>
   <audio id="seGameOver" src="audio/se_gameover.mp3"></audio>
-  <div id="scoreDisplay">スコア: 0</div>
+  <!-- タイトル・スコア -->
+  <div id="topInfo">りゅうまなタワーバトル<br><span id="scoreDisplay">スコア: 0</span></div>
   <div id="canvasWrapper">
     <div id="canvasBackground"></div>
     <canvas id="gameCanvas"></canvas>
@@ -97,13 +113,13 @@
       <h3>Thank you for playing！</h3>
       <div id="finalScore"></div>
     </div>
-  </div>
-  <div class="controls">
-    <button id="btnLeft">←</button>
-    <button id="btnLeftRot">左回し</button>
-    <button id="btnDrop">投下</button>
-    <button id="btnRightRot">右回し</button>
-    <button id="btnRight">→</button>
+    <div class="controls">
+      <button id="btnLeft">←</button>
+      <button id="btnLeftRot">↺</button>
+      <button id="btnDrop">投下</button>
+      <button id="btnRightRot">↻</button>
+      <button id="btnRight">→</button>
+    </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
   <script>
@@ -125,20 +141,21 @@
       {src: 'images/woman_barbell.png', scale: 0.2},
       {src: 'images/woman_kimono.png', scale: 0.2}
     ];
-    // 画面サイズ自動計算
+    // 画面サイズ
     let SCREEN_WIDTH = window.innerWidth;
-    // - controls(ボタン)の高さを引いてcanvas高さを計算
-    function getCanvasHeight() {
-      const controls = document.querySelector('.controls');
-      const nav = document.querySelector('nav');
-      // navの高さも引いて計算
-      let controlsH = controls ? controls.offsetHeight : 55;
-      let navH = nav ? nav.offsetHeight : 0;
-      return window.innerHeight - controlsH - navH - 4;
+    let SCREEN_HEIGHT = window.innerHeight;
+    function updateCanvasSize() {
+      SCREEN_WIDTH = window.innerWidth;
+      SCREEN_HEIGHT = window.innerHeight;
+      canvas.width = SCREEN_WIDTH;
+      canvas.height = SCREEN_HEIGHT;
+      Render.lookAt(render, {
+        min: {x: 0, y: cameraY},
+        max: {x: SCREEN_WIDTH, y: cameraY + SCREEN_HEIGHT}
+      });
     }
-    let SCREEN_HEIGHT = getCanvasHeight();
     let BASE_Y = Math.floor(SCREEN_HEIGHT * 0.93);
-    const BUTTON_HEIGHT = 55;
+    const BUTTON_HEIGHT = 30;
     const {Engine, Render, Runner, World, Bodies, Body, Composite, Events} = Matter;
     const engine = Engine.create();
     engine.positionIterations = 16;
@@ -156,7 +173,7 @@
     Render.run(render);
     Runner.run(engine);
 
-    // カメラ関連
+    // カメラ
     let cameraY = BASE_Y - (SCREEN_HEIGHT - BUTTON_HEIGHT - 20);
     let cameraTargetY = cameraY;
 
@@ -165,7 +182,7 @@
       Bodies.rectangle(SCREEN_WIDTH/2, BASE_Y, SCREEN_WIDTH*0.7, 20, {isStatic: true, restitution: 0.0, render: {fillStyle: '#800020'}})
     ]);
 
-    // 7px粒度ピクセル判定compound
+    // 12pxピクセル判定
     function createPixelMaskBody(obj, callback) {
       const img = new Image();
       img.src = obj.src;
@@ -178,9 +195,8 @@
         ctx.drawImage(img, 0, 0, w, h);
         const imageData = ctx.getImageData(0, 0, w, h);
         const parts = [];
-        const block = 7;
+        const block = 12; // ★ここを12に！
         let spawnY = cameraY + 40;
-
         for (let y = 0; y < h; y += block) {
           for (let x = 0; x < w; x += block) {
             const i = (Math.floor(y) * w + Math.floor(x)) * 4;
@@ -194,7 +210,7 @@
             }
           }
         }
-        // スプライト矩形を重ねる
+        // スプライト
         const spriteBody = Bodies.rectangle(
           SCREEN_WIDTH/2, spawnY + h/2,
           w, h,
@@ -210,7 +226,6 @@
     let moveInterval = null, rotateInterval = null;
     let score = 0, highScore = null;
     let isGameOver = false;
-
     function spawnPreview() {
       const obj = images[Math.floor(Math.random() * images.length)];
       createPixelMaskBody(obj, body => {
@@ -284,10 +299,8 @@
     setupButtonHold("btnRight", ()=>startMove(1), stopMove);
     setupButtonHold("btnLeftRot", ()=>startRotate(-1), stopRotate);
     setupButtonHold("btnRightRot", ()=>startRotate(1), stopRotate);
-    // 投下はワンタップ
     document.getElementById("btnDrop").addEventListener('click', dropBlock);
     document.getElementById("btnDrop").addEventListener('touchend', function(e){e.preventDefault();dropBlock();});
-
     function startMove(dir) {
       if (!moveInterval) moveInterval = setInterval(() => {
         if (previewBody) Body.translate(previewBody, {x: dir * 2, y: 0});
@@ -352,12 +365,11 @@
     spawnPreview();
     // 画面リサイズ対応
     window.addEventListener('resize', () => {
-      // canvas高さ・台座高さを更新
       SCREEN_WIDTH = window.innerWidth;
-      SCREEN_HEIGHT = getCanvasHeight();
-      BASE_Y = Math.floor(SCREEN_HEIGHT * 0.93);
+      SCREEN_HEIGHT = window.innerHeight;
       canvas.width = SCREEN_WIDTH;
       canvas.height = SCREEN_HEIGHT;
+      BASE_Y = Math.floor(SCREEN_HEIGHT * 0.93);
       Render.setPixelRatio(render, window.devicePixelRatio || 1);
       Render.lookAt(render, {
         min: {x: 0, y: cameraY},
