@@ -146,7 +146,7 @@
       }
       document.body.onclick = null;
     }
-    const globalObjectScale = 0.6;
+    const globalObjectScale = 0.5;
     const block = 5; // ピクセル粒度（台座も一致）
     const baseThickness = 60; // 台座の厚み強化
     const images = [
@@ -166,9 +166,9 @@
     const {Engine, Render, Runner, World, Bodies, Body, Composite, Events} = Matter;
     const engine = Engine.create();
     // 高精度モード
-    engine.positionIterations = 96;
-    engine.velocityIterations = 64;
-    engine.constraintIterations = 32;
+    engine.positionIterations = 192;
+    engine.velocityIterations = 128;
+    engine.constraintIterations = 64;
     const world = engine.world;
     const canvas = document.getElementById('gameCanvas');
     canvas.width = SCREEN_WIDTH * dpr;
@@ -206,7 +206,7 @@
           {
             isStatic: true,
             restitution: 0.0,
-            friction: 0.8,
+            friction: 1.0,
             frictionStatic: 1.0,
             render: {fillStyle: '#800020'}
           }
@@ -244,7 +244,7 @@
                 SCREEN_WIDTH/2 - w/2 + x + block/2,
                 spawnY + y + block/2,
                 block, block,
-                { friction: 0.8, frictionStatic: 1.0, restitution: 0.0, render: {visible: false} }
+                { friction: 1.0, frictionStatic: 1.0, restitution: 0.0, render: {visible: false} }
               ));
             }
           }
