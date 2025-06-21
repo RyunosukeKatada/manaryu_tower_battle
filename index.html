@@ -166,9 +166,9 @@
     const {Engine, Render, Runner, World, Bodies, Body, Composite, Events} = Matter;
     const engine = Engine.create();
     // 高精度モード
-    engine.positionIterations = 192;
-    engine.velocityIterations = 128;
-    engine.constraintIterations = 64;
+    engine.positionIterations = 96;
+    engine.velocityIterations = 64;
+    engine.constraintIterations = 32;
     const world = engine.world;
     const canvas = document.getElementById('gameCanvas');
     canvas.width = SCREEN_WIDTH * dpr;
@@ -305,8 +305,8 @@
       const topY = minY;
       score = Math.round(BASE_Y - topY);
       document.getElementById('scoreDisplay').textContent = `スコア: ${score}`;
-      if (topY < cameraY + 0.5 * SCREEN_HEIGHT) {
-        let targetY = topY - 0.2 * SCREEN_HEIGHT;
+      if (topY < cameraY + 0.6 * SCREEN_HEIGHT) {
+        let targetY = topY - 0.1 * SCREEN_HEIGHT;
         cameraTargetY = targetY;
       }
     }
