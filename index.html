@@ -306,7 +306,7 @@
       score = Math.round(BASE_Y - topY);
       document.getElementById('scoreDisplay').textContent = `スコア: ${score}`;
       if (topY < cameraY + 0.6 * SCREEN_HEIGHT) {
-        let targetY = topY - 0.1 * SCREEN_HEIGHT;
+        let targetY = topY - 0.3 * SCREEN_HEIGHT;
         cameraTargetY = targetY;
       }
     }
