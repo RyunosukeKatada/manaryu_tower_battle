@@ -20,8 +20,6 @@
     #canvasWrapper {
       position: relative;
       width: 100vw; height: 100vh;
-      max-width: none; max-height: none;
-      min-height: 0; min-width: 0;
       background: transparent;
     }
     #canvasBackground {
@@ -32,7 +30,7 @@
     }
     #gameCanvas {
       position: absolute; top: 0; left: 0;
-      width: 100vw !important; height: 100vh !important;
+      width: 100vw; height: 100vh;
       display: block;
       background: transparent;
       z-index: 1;
@@ -157,8 +155,18 @@
       {src: 'images/woman_barbell.png', scale: 0.2 * globalObjectScale},
       {src: 'images/woman_kimono.png', scale: 0.2 * globalObjectScale}
     ];
+    // 自動block粒度
+    function getBlockSize() {
+      // 画面幅800未満は9px、800～1600は15px、それ以上は25pxぐらいを目安に
+      const w = Math.max(window.innerWidth, window.innerHeight);
+      if (w > 1600) return 25;
+      if (w > 800) return 15;
+      return 9;
+    }
+
     let SCREEN_WIDTH = window.innerWidth;
     let SCREEN_HEIGHT = window.innerHeight;
+    let dpr = window.devicePixelRatio || 1;
     let BASE_Y = Math.floor(SCREEN_HEIGHT * 0.93);
     const BUTTON_HEIGHT = 30;
     const {Engine, Render, Runner, World, Bodies, Body, Composite, Events} = Matter;
@@ -168,19 +176,26 @@
     engine.constraintIterations = 6;
     const world = engine.world;
     const canvas = document.getElementById('gameCanvas');
-    canvas.width = SCREEN_WIDTH;
-    canvas.height = SCREEN_HEIGHT;
+    canvas.width = SCREEN_WIDTH * dpr;
+    canvas.height = SCREEN_HEIGHT * dpr;
+    canvas.style.width = SCREEN_WIDTH + "px";
+    canvas.style.height = SCREEN_HEIGHT + "px";
     const render = Render.create({
       canvas,
       engine,
-      options: {width: SCREEN_WIDTH, height: SCREEN_HEIGHT, wireframes: false, background: 'transparent'}
+      options: {
+        width: SCREEN_WIDTH,
+        height: SCREEN_HEIGHT,
+        wireframes: false,
+        background: 'transparent',
+        pixelRatio: dpr
+      }
     });
     Render.run(render);
     Runner.run(engine);
 
     // 台座Bodyグローバル参照
     let baseBody = null;
-
     function createBase() {
       if (baseBody) {
         World.remove(world, baseBody);
@@ -200,7 +215,7 @@
     // 最初の台座生成
     createBase();
 
-    // 9pxピクセル判定
+    // ピクセル判定Body生成
     function createPixelMaskBody(obj, callback) {
       const img = new Image();
       img.src = obj.src;
@@ -213,7 +228,7 @@
         ctx.drawImage(img, 0, 0, w, h);
         const imageData = ctx.getImageData(0, 0, w, h);
         const parts = [];
-        const block = 9; // 9px粒度
+        const block = getBlockSize();
         let spawnY = cameraY + 40;
         for (let y = 0; y < h; y += block) {
           for (let x = 0; x < w; x += block) {
@@ -359,7 +374,7 @@
               }
             }
           } else {
-            if (body.bounds.max.y > BASE_Y + 300) {
+            if (body.bounds.max.y > BASE_Y + 100) {
               isGameOver = true;
               document.getElementById('gameOver').style.display = 'block';
               document.getElementById('finalScore').textContent = `スコア: ${score}`;
@@ -377,16 +392,20 @@
       max: {x: SCREEN_WIDTH, y: cameraY + SCREEN_HEIGHT}
     });
     spawnPreview();
+
     // 画面リサイズ対応
     window.addEventListener('resize', () => {
       SCREEN_WIDTH = window.innerWidth;
       SCREEN_HEIGHT = window.innerHeight;
-      canvas.width = SCREEN_WIDTH;
-      canvas.height = SCREEN_HEIGHT;
+      dpr = window.devicePixelRatio || 1;
+      canvas.width = SCREEN_WIDTH * dpr;
+      canvas.height = SCREEN_HEIGHT * dpr;
+      canvas.style.width = SCREEN_WIDTH + "px";
+      canvas.style.height = SCREEN_HEIGHT + "px";
       BASE_Y = Math.floor(SCREEN_HEIGHT * 0.93);
       cameraY = BASE_Y - (SCREEN_HEIGHT - BUTTON_HEIGHT - 20);
       cameraTargetY = cameraY;
-      Render.setPixelRatio(render, window.devicePixelRatio || 1);
+      Render.setPixelRatio(render, dpr);
       createBase();
       Render.lookAt(render, {
         min: {x: 0, y: cameraY},
