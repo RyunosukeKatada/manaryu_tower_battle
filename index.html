@@ -286,8 +286,7 @@
         if (body.speed < 0.05) still += 100; else still = 0;
         if (still >= 1000) {
           clearInterval(interval);
-          updateScore();
-          spawnPreview();
+          updateScoreAndMaybeSpawn(); // カメラ移動含む
         }
       }, 100);
     }
