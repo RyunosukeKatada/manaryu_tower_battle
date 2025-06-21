@@ -146,8 +146,8 @@
       }
       document.body.onclick = null;
     }
-    const globalObjectScale = 0.8;
-    const block = 10; // ピクセル粒度（台座も一致）
+    const globalObjectScale = 0.5;
+    const block = 6; // ピクセル粒度（台座も一致）
     const baseThickness = 40; // 台座の厚み強化
     const images = [
       {src: 'images/dumbbell.png', scale: 0.1 * globalObjectScale},
@@ -166,9 +166,9 @@
     const {Engine, Render, Runner, World, Bodies, Body, Composite, Events} = Matter;
     const engine = Engine.create();
     // 高精度モード
-    engine.positionIterations = 24;
-    engine.velocityIterations = 16;
-    engine.constraintIterations = 8;
+    engine.positionIterations = 48;
+    engine.velocityIterations = 32;
+    engine.constraintIterations = 16;
     const world = engine.world;
     const canvas = document.getElementById('gameCanvas');
     canvas.width = SCREEN_WIDTH * dpr;
