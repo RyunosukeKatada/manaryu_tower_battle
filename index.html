@@ -1,136 +1,323 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
-  <meta charset="UTF-8">
-  <title>物理ブロックバトル</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>りゅうまなタワーバトル</title>
+  <link href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" rel="stylesheet" />
   <style>
-    canvas {
-      display: block;
-      margin: auto;
-      background: #eef1f5;
-      border-radius: 8px;
-      max-width: 100%;
-      height: auto;
+    body {
+      background: #eef;
     }
-    .center {
+
+    #canvasWrapper {
+      position: relative;
+      width: 400px;
+      height: 700px;
+      margin: auto;
+      padding-bottom: 50px;
+    }
+
+    #canvasBackground {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('images/background.png') center/cover no-repeat;
+      opacity: 0.25;
+      z-index: 0;
+    }
+
+    #gameCanvas {
+      position: relative;
+      z-index: 1;
+      background: transparent;
+      display: block;
+    }
+
+    .controls {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.5rem 0.5rem;
+      background: rgba(255, 255, 255, 0.85);
+      z-index: 2;
+      box-sizing: border-box;
+      height: 150px;
+    }
+
+    #scoreDisplay {
       text-align: center;
+      font-weight: bold;
+      margin: 1rem auto;
+    }
+
+    #gameOver {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      text-align: center;
+      z-index: 10;
     }
   </style>
 </head>
+
 <body>
-
-<nav class="container-fluid">
-  <ul>
-    <li><strong>ブロックバトル</strong></li>
-  </ul>
-  <ul>
-    <li><a href="#">遊び方</a></li>
-    <li><a href="#">画像変更</a></li>
-    <li><a href="#" role="button">リセット</a></li>
-  </ul>
-</nav>
-
-<main class="container">
-  <div class="grid">
-    <section>
-      <hgroup>
-        <h2>どうぶつ…じゃないけどタワーバトル</h2>
-        <h3>物理演算で画像を積んでいこう</h3>
-      </hgroup>
-      <p class="center">画面をタップ or クリックすると、ランダムなブロックが落ちます。</p>
-      <canvas id="gameCanvas" width="400" height="600"></canvas>
-    </section>
+  <nav class="container-fluid">
+    <ul>
+      <li><strong>りゅうまなタワーバトル</strong></li>
+    </ul>
+    <ul>
+      <li><a href="#" role="button" onclick="location.reload()">リセット</a></li>
+    </ul>
+  </nav>
+  <audio id="bgm" src="audio/bgm.mp3" loop autoplay></audio>
+  <audio id="seDrop" src="audio/se_drop.mp3"></audio>
+  <audio id="seGameOver" src="audio/se_gameover.mp3"></audio>
+  <div id="scoreDisplay">スコア: 0</div>
+  <div id="canvasWrapper">
+    <div id="canvasBackground"></div>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <div class="controls">
+      <button onmousedown="startMove(-1)" onmouseup="stopMove()">←</button>
+      <button onmousedown="startRotate(-1)" onmouseup="stopRotate()">左回し</button>
+      <button onclick="dropBlock()">投下</button>
+      <button onmousedown="startRotate(1)" onmouseup="stopRotate()">右回し</button>
+      <button onmousedown="startMove(1)" onmouseup="stopMove()">→</button>
+    </div>
+    <div id="gameOver">
+      <h3>Thank you for playing！</h3>
+      <div id="finalScore"></div>
+    </div>
   </div>
-</main>
+  <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+  <script>
+    const images = [
+      {src: 'images/dumbbell.png', scale: 0.1},
+      {src: 'images/fashion.png', scale: 0.12},
+      {src: 'images/motorcycle.png', scale: 0.10},
+      {src: 'images/man_kimono.png', scale: 0.2},
+      {src: 'images/woman_barbell.png', scale: 0.2},
+      {src: 'images/woman_kimono.png', scale: 0.2}
+    ];
+    const BASE_Y = 560;
+    const SCREEN_HEIGHT = 600;
+    const BUTTON_HEIGHT = 60;
+    const {Engine, Render, Runner, World, Bodies, Body, Composite, Events} = Matter;
+    const engine = Engine.create();
+    engine.positionIterations = 16;
+    engine.velocityIterations = 12;
+    engine.constraintIterations = 6;
+    const world = engine.world;
+    const canvas = document.getElementById('gameCanvas');
+    const render = Render.create({
+      canvas,
+      engine,
+      options: {width: 400, height: 600, wireframes: false, background: 'transparent'}
+    });
+    Render.run(render);
+    Runner.run(engine);
 
-<section aria-label="Subscribe example">
-  <div class="container">
-    <article>
-      <hgroup>
-        <h2>ゲーム更新を受け取る</h2>
-        <h3>開発の進捗や素材募集などをお知らせ予定！</h3>
-      </hgroup>
-      <form class="grid">
-        <input type="text" id="firstname" name="firstname" placeholder="名前" aria-label="名前" required />
-        <input type="email" id="email" name="email" placeholder="メールアドレス" aria-label="メールアドレス" required />
-        <button type="submit" onclick="event.preventDefault()">登録</button>
-      </form>
-    </article>
-  </div>
-</section>
+    // カメラ関連
+    let cameraY = BASE_Y - (SCREEN_HEIGHT - BUTTON_HEIGHT - 20);
+    let cameraTargetY = cameraY;
 
-<footer class="container">
-  <small><a href="#">GitHub</a> • <a href="#">利用規約</a></small>
-</footer>
+    // 台座
+    World.add(world, [
+      Bodies.rectangle(200, BASE_Y, 280, 20, {isStatic: true, restitution: 0.0, render: {fillStyle: '#800020'}})
+    ]);
 
-<script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
-<script>
-  const { Engine, Render, Runner, Bodies, World, Events, Composite } = Matter;
+    // 7px粒度ピクセル判定compound
+    function createPixelMaskBody(obj, callback) {
+      const img = new Image();
+      img.src = obj.src;
+      img.onload = () => {
+        const scale = obj.scale;
+        const w = img.width * scale, h = img.height * scale;
+        const tmp = document.createElement('canvas');
+        tmp.width = w; tmp.height = h;
+        const ctx = tmp.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const imageData = ctx.getImageData(0, 0, w, h);
+        const parts = [];
+        const block = 16; // 16px単位
 
-  const engine = Engine.create();
-  const world = engine.world;
-  const canvas = document.getElementById("gameCanvas");
+        // カメラの現在の上端＋40px（見切れないように適度なマージン）
+        let spawnY = cameraY + 60;
 
-  const render = Render.create({
-    canvas: canvas,
-    engine: engine,
-    options: {
-      width: 400,
-      height: 600,
-      wireframes: false,
-      background: "#eef1f5"
-    }
-  });
-
-  Render.run(render);
-  const runner = Runner.create();
-  Runner.run(runner, engine);
-
-  // 地面と壁
-  const ground = Bodies.rectangle(200, 610, 400, 60, { isStatic: true });
-  const leftWall = Bodies.rectangle(-10, 300, 20, 600, { isStatic: true });
-  const rightWall = Bodies.rectangle(410, 300, 20, 600, { isStatic: true });
-  World.add(world, [ground, leftWall, rightWall]);
-
-  // ブロック画像一覧
-  const imageFiles = [
-    'images/dumbbell.png',
-    'images/fashion.png',
-    'images/motorcycle.png',
-    'images/man_kimono.png',
-    'images/woman_barbell.png',
-    'images/woman_kimono.png'
-  ];
-
-  // ブロック生成
-  function dropRandomBlock() {
-    const imgSrc = imageFiles[Math.floor(Math.random() * imageFiles.length)];
-    const texture = new Image();
-    texture.src = imgSrc;
-    texture.onload = () => {
-      const w = 80, h = 80;
-      const block = Bodies.rectangle(200, 0, w, h, {
-        render: {
-          sprite: {
-            texture: imgSrc,
-            xScale: w / texture.width,
-            yScale: h / texture.height
+        for (let y = 0; y < h; y += block) {
+          for (let x = 0; x < w; x += block) {
+            const i = (Math.floor(y) * w + Math.floor(x)) * 4;
+            if (imageData.data[i + 3] > 32) {
+              parts.push(Bodies.rectangle(
+                200 - w / 2 + x + block / 2,
+                spawnY + y + block / 2,
+                block, block,
+                {friction: 1.0, frictionStatic: 1.0, restitution: 0.0, render: {visible: false}}
+              ));
+            }
           }
         }
+        // スプライト矩形を重ねる
+        const spriteBody = Bodies.rectangle(
+          200, spawnY + h / 2,
+          w, h,
+          {isSensor: true, render: {sprite: {texture: obj.src, xScale: scale, yScale: scale}}}
+        );
+        parts.push(spriteBody);
+        const compound = Body.create({parts});
+        Body.setStatic(compound, true);
+        callback(compound);
+      };
+    }
+    let previewBody = null;
+    let moveInterval = null, rotateInterval = null;
+    let score = 0, highScore = null;
+    let isGameOver = false;
+
+    function spawnPreview() {
+      const obj = images[Math.floor(Math.random() * images.length)];
+      createPixelMaskBody(obj, body => {
+        previewBody = body;
+        World.add(world, body);
       });
-      World.add(world, block);
-    };
-  }
+    }
+    function dropBlock() {
+      if (!previewBody) return;
+      Body.setStatic(previewBody, false);
+      document.getElementById('seDrop').play();
+      monitorStability(previewBody);
+      previewBody = null;
+    }
+    function monitorStability(body) {
+      let still = 0;
+      const interval = setInterval(() => {
+        if (body.speed < 0.05) still += 100; else still = 0;
+        if (still >= 1000) {
+          clearInterval(interval);
+          updateScore();
+          spawnPreview();
+        }
+      }, 100);
+    }
+    function updateScore() {
+      // ▼▼▼▼ 全ピクセルパーツの上端で判定 ▼▼▼▼
+      let minY = Infinity;
+      const bodies = Composite.allBodies(world).filter(b => !b.isStatic);
+      for (const body of bodies) {
+        for (const part of body.parts) {
+          if (!part.isSensor) {
+            if (part.bounds.min.y < minY) minY = part.bounds.min.y;
+          }
+        }
+      }
+      if (minY === Infinity) return;
+      const topY = minY;
+      // ▲▲▲▲ ここまで ▲▲▲▲
 
-  // タップ・クリックでブロックを落とす
-  canvas.addEventListener("mousedown", dropRandomBlock);
-  canvas.addEventListener("touchstart", function(e) {
-    e.preventDefault();
-    dropRandomBlock();
-  }, { passive: false });
+      score = Math.round(BASE_Y - topY);
+      document.getElementById('scoreDisplay').textContent = `スコア: ${score}`;
+      if (highScore === null || score > highScore) {
+        highScore = score;
+        document.getElementById('scoreDisplay').textContent += `　ハイスコア: ${highScore}`;
+      }
+      // 「上から60%より上」に来たら、「上から30%」になるようカメラターゲットをセット
+      if (topY < cameraY + 0.6 * SCREEN_HEIGHT) {
+        let targetY = topY - 0.5 * SCREEN_HEIGHT;
+        // ↓ ここを削除！ (targetY < 0でもOKに)
+        // if (targetY < 0) targetY = 0;
+        cameraTargetY = targetY;
+      }
+    }
 
-</script>
+    // カメラ滑らか追従
+    function updateCameraSmooth() {
+      const alpha = 0.25;
+      cameraY += (cameraTargetY - cameraY) * alpha;
+      if (Math.abs(cameraY - cameraTargetY) < 1) cameraY = cameraTargetY;
+      Render.lookAt(render, {
+        min: {x: 0, y: Math.max(0, cameraY)},
+        max: {x: 400, y: cameraY + 600}
+      });
+    }
+    setInterval(updateCameraSmooth, 16);
+
+    function startMove(dir) {
+      if (!moveInterval) moveInterval = setInterval(() => {
+        if (previewBody) Body.translate(previewBody, {x: dir * 2, y: 0});
+      }, 16);
+    }
+    function stopMove() {clearInterval(moveInterval); moveInterval = null;}
+    function startRotate(dir) {
+      if (!rotateInterval) rotateInterval = setInterval(() => {
+        if (previewBody) Body.rotate(previewBody, dir * Math.PI / 180);
+      }, 16);
+    }
+    function stopRotate() {clearInterval(rotateInterval); rotateInterval = null;}
+    // 毎フレームspriteBodyをcompound bodyに同期
+    Events.on(engine, 'beforeUpdate', function () {
+      const bodies = Composite.allBodies(world);
+      for (const body of bodies) {
+        if (body.parts && body.parts.length > 1) {
+          for (const part of body.parts) {
+            if (part.isSensor) {
+              Body.setPosition(part, body.position);
+              Body.setAngle(part, body.angle);
+            }
+          }
+        }
+      }
+    });
+    Events.on(engine, 'afterUpdate', () => {
+      if (isGameOver) return;
+      const bodies = Composite.allBodies(world);
+      for (let body of bodies) {
+        if (!body.isStatic) {
+          if (body.parts && body.parts.length > 1) {
+            for (const part of body.parts) {
+              if (!part.isSensor && part.bounds.max.y > BASE_Y + 100) {
+                isGameOver = true;
+                document.getElementById('gameOver').style.display = 'block';
+                document.getElementById('finalScore').textContent = `スコア: ${score}`;
+                document.getElementById('seGameOver').play();
+                Render.stop(render);
+                Runner.stop(engine);
+                break;
+              }
+            }
+          } else {
+            if (body.bounds.max.y > BASE_Y + 100) {
+              isGameOver = true;
+              document.getElementById('gameOver').style.display = 'block';
+              document.getElementById('finalScore').textContent = `スコア: ${score}`;
+              document.getElementById('seGameOver').play();
+              Render.stop(render);
+              Runner.stop(engine);
+              break;
+            }
+          }
+        }
+      }
+    });
+    Render.lookAt(render, {
+      min: {x: 0, y: Math.max(0, cameraY)},
+      max: {x: 400, y: cameraY + 600}
+    });
+    spawnPreview();
+  </script>
 </body>
+
 </html>
