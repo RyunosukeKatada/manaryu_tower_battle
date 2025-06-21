@@ -38,7 +38,6 @@
       z-index: 1;
       touch-action: none;
     }
-    /* 左上タイトル・スコア */
     #topInfo {
       position: absolute;
       top: 8px; left: 10px;
@@ -121,7 +120,6 @@
   <audio id="bgm" src="audio/bgm.mp3" loop></audio>
   <audio id="seDrop" src="audio/se_drop.mp3"></audio>
   <audio id="seGameOver" src="audio/se_gameover.mp3"></audio>
-  <!-- タイトル・スコア -->
   <div id="topInfo">りゅうまなタワーバトル<br><span id="scoreDisplay">スコア: 0</span></div>
   <div id="canvasWrapper">
     <div id="canvasBackground"></div>
@@ -141,7 +139,6 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
   <script>
-    // スマホ用: BGMは初回タップでのみ再生可能
     let bgmStarted = false;
     function startBgmOnce() {
       if (!bgmStarted) {
@@ -151,11 +148,7 @@
       }
       document.body.onclick = null;
     }
-
-    // サイズ倍率（全オブジェクトに乗算）
     const globalObjectScale = 0.8;
-
-    // 各画像の基本スケールにglobalObjectScaleを掛ける
     const images = [
       {src: 'images/dumbbell.png', scale: 0.1 * globalObjectScale},
       {src: 'images/fashion.png', scale: 0.12 * globalObjectScale},
@@ -164,19 +157,8 @@
       {src: 'images/woman_barbell.png', scale: 0.2 * globalObjectScale},
       {src: 'images/woman_kimono.png', scale: 0.2 * globalObjectScale}
     ];
-    // 画面サイズ
     let SCREEN_WIDTH = window.innerWidth;
     let SCREEN_HEIGHT = window.innerHeight;
-    function updateCanvasSize() {
-      SCREEN_WIDTH = window.innerWidth;
-      SCREEN_HEIGHT = window.innerHeight;
-      canvas.width = SCREEN_WIDTH;
-      canvas.height = SCREEN_HEIGHT;
-      Render.lookAt(render, {
-        min: {x: 0, y: cameraY},
-        max: {x: SCREEN_WIDTH, y: cameraY + SCREEN_HEIGHT}
-      });
-    }
     let BASE_Y = Math.floor(SCREEN_HEIGHT * 0.93);
     const BUTTON_HEIGHT = 30;
     const {Engine, Render, Runner, World, Bodies, Body, Composite, Events} = Matter;
@@ -196,14 +178,27 @@
     Render.run(render);
     Runner.run(engine);
 
+    // 台座Bodyグローバル参照
+    let baseBody = null;
+
+    function createBase() {
+      if (baseBody) {
+        World.remove(world, baseBody);
+      }
+      baseBody = Bodies.rectangle(
+        SCREEN_WIDTH/2, BASE_Y,
+        SCREEN_WIDTH*0.7, 20,
+        {isStatic: true, restitution: 0.0, render: {fillStyle: '#800020'}}
+      );
+      World.add(world, baseBody);
+    }
+
     // カメラ
     let cameraY = BASE_Y - (SCREEN_HEIGHT - BUTTON_HEIGHT - 20);
     let cameraTargetY = cameraY;
 
-    // 台座
-    World.add(world, [
-      Bodies.rectangle(SCREEN_WIDTH/2, BASE_Y, SCREEN_WIDTH*0.7, 20, {isStatic: true, restitution: 0.0, render: {fillStyle: '#800020'}})
-    ]);
+    // 最初の台座生成
+    createBase();
 
     // 12pxピクセル判定
     function createPixelMaskBody(obj, callback) {
@@ -390,6 +385,8 @@
       canvas.height = SCREEN_HEIGHT;
       BASE_Y = Math.floor(SCREEN_HEIGHT * 0.93);
       Render.setPixelRatio(render, window.devicePixelRatio || 1);
+      // 台座も再生成！
+      createBase();
       Render.lookAt(render, {
         min: {x: 0, y: cameraY},
         max: {x: SCREEN_WIDTH, y: cameraY + SCREEN_HEIGHT}
