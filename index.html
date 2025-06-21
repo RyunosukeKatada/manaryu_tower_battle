@@ -85,6 +85,8 @@
       border: 1px solid #bbb;
       box-shadow: 0 1px 2px 0 rgba(0,0,0,0.10);
       transition: background 0.1s, opacity 0.2s;
+      color: #111 !important;
+      font-weight: bold;
     }
     .controls button:active {
       background: #ffeedd;
@@ -94,9 +96,24 @@
       display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
       background: rgba(0, 0, 0, 0.75); color: white; padding: 2rem; border-radius: 1rem;
       text-align: center; z-index: 20;
+      min-width: 200px;
     }
-    #gameOver h3 {
-      color: #fff;  /* ← ここで確実に白色指定 */
+    #gameOver h3 { color: #fff; }
+    #resetButton {
+      margin-top: 1.2em;
+      padding: 0.5em 2.5em;
+      font-size: 1.1em;
+      font-weight: bold;
+      border-radius: 8px;
+      border: none;
+      color: #fff;
+      background: #ae3040;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.10);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    #resetButton:active {
+      background: #7a0020;
     }
   </style>
 </head>
@@ -112,6 +129,7 @@
     <div id="gameOver">
       <h3>Thank you for playing！</h3>
       <div id="finalScore"></div>
+      <button id="resetButton" onclick="location.reload()">リセット</button>
     </div>
     <div class="controls">
       <button id="btnLeft">←</button>
@@ -133,13 +151,18 @@
       }
       document.body.onclick = null;
     }
+
+    // サイズ倍率（全オブジェクトに乗算）
+    const globalObjectScale = 0.8;
+
+    // 各画像の基本スケールにglobalObjectScaleを掛ける
     const images = [
-      {src: 'images/dumbbell.png', scale: 0.1},
-      {src: 'images/fashion.png', scale: 0.12},
-      {src: 'images/motorcycle.png', scale: 0.10},
-      {src: 'images/man_kimono.png', scale: 0.2},
-      {src: 'images/woman_barbell.png', scale: 0.2},
-      {src: 'images/woman_kimono.png', scale: 0.2}
+      {src: 'images/dumbbell.png', scale: 0.1 * globalObjectScale},
+      {src: 'images/fashion.png', scale: 0.12 * globalObjectScale},
+      {src: 'images/motorcycle.png', scale: 0.10 * globalObjectScale},
+      {src: 'images/man_kimono.png', scale: 0.2 * globalObjectScale},
+      {src: 'images/woman_barbell.png', scale: 0.2 * globalObjectScale},
+      {src: 'images/woman_kimono.png', scale: 0.2 * globalObjectScale}
     ];
     // 画面サイズ
     let SCREEN_WIDTH = window.innerWidth;
@@ -195,7 +218,7 @@
         ctx.drawImage(img, 0, 0, w, h);
         const imageData = ctx.getImageData(0, 0, w, h);
         const parts = [];
-        const block = 12; // ★ここを12に！
+        const block = 12; // 12px粒度
         let spawnY = cameraY + 40;
         for (let y = 0; y < h; y += block) {
           for (let x = 0; x < w; x += block) {
@@ -224,7 +247,7 @@
     }
     let previewBody = null;
     let moveInterval = null, rotateInterval = null;
-    let score = 0, highScore = null;
+    let score = 0;
     let isGameOver = false;
     function spawnPreview() {
       const obj = images[Math.floor(Math.random() * images.length)];
@@ -265,10 +288,6 @@
       const topY = minY;
       score = Math.round(BASE_Y - topY);
       document.getElementById('scoreDisplay').textContent = `スコア: ${score}`;
-      if (highScore === null || score > highScore) {
-        highScore = score;
-        document.getElementById('scoreDisplay').textContent += `　ハイスコア: ${highScore}`;
-      }
       if (topY < cameraY + 0.6 * SCREEN_HEIGHT) {
         let targetY = topY - 0.3 * SCREEN_HEIGHT;
         cameraTargetY = targetY;
