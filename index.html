@@ -235,7 +235,7 @@
         ctx.drawImage(img, 0, 0, w, h);
         const imageData = ctx.getImageData(0, 0, w, h);
         const parts = [];
-        let spawnY = cameraY + 40;
+        let spawnY = cameraY + 70;
         for (let y = 0; y < h; y += block) {
           for (let x = 0; x < w; x += block) {
             const i = (Math.floor(y) * w + Math.floor(x)) * 4;
