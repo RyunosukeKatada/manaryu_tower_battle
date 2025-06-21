@@ -127,7 +127,7 @@
     <div id="gameOver">
       <h3>Thank you for playing！</h3>
       <div id="finalScore"></div>
-      <button id="resetButton" onclick="location.reload()">リセット</button>
+      <button id="resetButton" onclick="location.reload()">再開</button>
     </div>
     <div class="controls">
       <button id="btnLeft">←</button>
@@ -200,7 +200,7 @@
     // 最初の台座生成
     createBase();
 
-    // 12pxピクセル判定
+    // 9pxピクセル判定
     function createPixelMaskBody(obj, callback) {
       const img = new Image();
       img.src = obj.src;
@@ -213,7 +213,7 @@
         ctx.drawImage(img, 0, 0, w, h);
         const imageData = ctx.getImageData(0, 0, w, h);
         const parts = [];
-        const block = 12; // 12px粒度
+        const block = 9; // 9px粒度
         let spawnY = cameraY + 40;
         for (let y = 0; y < h; y += block) {
           for (let x = 0; x < w; x += block) {
@@ -384,8 +384,9 @@
       canvas.width = SCREEN_WIDTH;
       canvas.height = SCREEN_HEIGHT;
       BASE_Y = Math.floor(SCREEN_HEIGHT * 0.93);
+      cameraY = BASE_Y - (SCREEN_HEIGHT - BUTTON_HEIGHT - 20);
+      cameraTargetY = cameraY;
       Render.setPixelRatio(render, window.devicePixelRatio || 1);
-      // 台座も再生成！
       createBase();
       Render.lookAt(render, {
         min: {x: 0, y: cameraY},
