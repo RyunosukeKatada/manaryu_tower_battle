@@ -147,6 +147,7 @@
       document.body.onclick = null;
     }
     const globalObjectScale = 0.8;
+    const block = 50; // ピクセル粒度・台座ブロックも同じサイズ
     const images = [
       {src: 'images/dumbbell.png', scale: 0.1 * globalObjectScale},
       {src: 'images/fashion.png', scale: 0.12 * globalObjectScale},
@@ -155,8 +156,6 @@
       {src: 'images/woman_barbell.png', scale: 0.2 * globalObjectScale},
       {src: 'images/woman_kimono.png', scale: 0.2 * globalObjectScale}
     ];
-    // 固定blockサイズ
-    const block = 2;
 
     let SCREEN_WIDTH = window.innerWidth;
     let SCREEN_HEIGHT = window.innerHeight;
@@ -189,17 +188,24 @@
     Runner.run(engine);
 
     // 台座Bodyグローバル参照
-    let baseBody = null;
+    let baseBlocks = [];
+
     function createBase() {
-      if (baseBody) {
-        World.remove(world, baseBody);
+      // 既存を全削除
+      baseBlocks.forEach(b => World.remove(world, b));
+      baseBlocks = [];
+      // 台座の幅を画面幅の70%に
+      const baseWidth = SCREEN_WIDTH * 0.7;
+      const leftX = SCREEN_WIDTH/2 - baseWidth/2;
+      for(let x=0; x<baseWidth; x+=block){
+        baseBlocks.push(Bodies.rectangle(
+          leftX + x + block/2,
+          BASE_Y,
+          block, 20,
+          {isStatic: true, restitution: 0.0, friction: 0.8, frictionStatic: 1.0, render: {fillStyle: '#800020'}}
+        ));
       }
-      baseBody = Bodies.rectangle(
-        SCREEN_WIDTH/2, BASE_Y,
-        SCREEN_WIDTH*0.7, 20,
-        {isStatic: true, restitution: 0.0, render: {fillStyle: '#800020'}}
-      );
-      World.add(world, baseBody);
+      World.add(world, baseBlocks);
     }
 
     // カメラ
@@ -356,7 +362,7 @@
         if (!body.isStatic) {
           if (body.parts && body.parts.length > 1) {
             for (const part of body.parts) {
-              if (!part.isSensor && part.bounds.max.y > BASE_Y + 400) {
+              if (!part.isSensor && part.bounds.max.y > BASE_Y + 100) {
                 isGameOver = true;
                 document.getElementById('gameOver').style.display = 'block';
                 document.getElementById('finalScore').textContent = `スコア: ${score}`;
